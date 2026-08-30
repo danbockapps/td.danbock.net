@@ -18,6 +18,7 @@ function EntryTable({entries, showRound}: {entries: EntryListItem[]; showRound: 
     <table className="table">
       <thead>
         <tr>
+          <th>Seed</th>
           {showRound && <th>Round</th>}
           <th>Name</th>
           <th>Rating</th>
@@ -26,6 +27,7 @@ function EntryTable({entries, showRound}: {entries: EntryListItem[]; showRound: 
       <tbody>
         {entries.map((e, i) => (
           <tr key={`${e.round ?? 0}-${e.name}-${i}`}>
+            <td>{i + 1}</td>
             {showRound && <td>{e.round}</td>}
             <td>{e.name}</td>
             <td>{formatRating(e.rating)}</td>
