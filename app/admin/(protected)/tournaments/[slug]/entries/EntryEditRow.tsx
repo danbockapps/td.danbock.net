@@ -4,13 +4,15 @@ import {updateEntry} from '@/app/admin/(protected)/tournaments/[slug]/actions'
 import {useState, useTransition} from 'react'
 
 export function EntryEditRow({
-  id,
-  round,
+  tournamentId,
+  uscfId,
+  rounds,
   initialName,
   initialRating,
 }: {
-  id: number
-  round: number
+  tournamentId: number
+  uscfId: string
+  rounds: number[]
   initialName: string
   initialRating: number | null
 }) {
@@ -21,7 +23,7 @@ export function EntryEditRow({
 
   function save() {
     startTransition(async () => {
-      await updateEntry(id, {
+      await updateEntry(tournamentId, uscfId, {
         name,
         rating: rating.trim() === '' ? null : Number(rating),
       })
@@ -32,7 +34,7 @@ export function EntryEditRow({
 
   return (
     <tr>
-      <td>{round}</td>
+      <td>{rounds.join(', ')}</td>
       <td>
         <input
           className="input input-sm w-full"

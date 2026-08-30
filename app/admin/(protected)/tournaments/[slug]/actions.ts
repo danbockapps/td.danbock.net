@@ -14,11 +14,15 @@ async function requireTournament(slug: string) {
   return tournament
 }
 
-export async function updateEntry(entryId: number, data: {name: string; rating: number | null}) {
+export async function updateEntry(
+  tournamentId: number,
+  uscfId: string,
+  data: {name: string; rating: number | null},
+) {
   await db
     .update(entries)
     .set({name: data.name, rating: data.rating})
-    .where(eq(entries.id, entryId))
+    .where(and(eq(entries.tournamentId, tournamentId), eq(entries.uscfId, uscfId)))
   revalidatePath('/admin/tournaments')
   revalidatePath('/t')
 }

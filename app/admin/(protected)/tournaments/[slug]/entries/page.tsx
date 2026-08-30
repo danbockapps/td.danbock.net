@@ -17,31 +17,51 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
     orderBy: (e, {asc}) => [asc(e.round), asc(e.name)],
   })
 
+  const players = new Map<
+    string,
+    {uscfId: string; name: string; rating: number | null; rounds: number[]}
+  >()
+  for (const e of allEntries) {
+    const existing = players.get(e.uscfId)
+    if (existing) {
+      existing.rounds.push(e.round)
+    } else {
+      players.set(e.uscfId, {
+        uscfId: e.uscfId,
+        name: e.name,
+        rating: e.rating,
+        rounds: [e.round],
+      })
+    }
+  }
+  const allPlayers = [...players.values()].sort((a, b) => a.name.localeCompare(b.name))
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="mb-6 text-2xl font-bold">Edit Entries — {tournament.name}</h1>
 
-      {allEntries.length === 0 ? (
+      {allPlayers.length === 0 ? (
         <p className="text-base-content/60">No entries yet.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="table">
             <thead>
               <tr>
-                <th>Round</th>
+                <th>Rounds</th>
                 <th>Name</th>
                 <th>Rating</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {allEntries.map((e) => (
+              {allPlayers.map((p) => (
                 <EntryEditRow
-                  key={e.id}
-                  id={e.id}
-                  round={e.round}
-                  initialName={e.name}
-                  initialRating={e.rating}
+                  key={p.uscfId}
+                  tournamentId={tournament.id}
+                  uscfId={p.uscfId}
+                  rounds={p.rounds}
+                  initialName={p.name}
+                  initialRating={p.rating}
                 />
               ))}
             </tbody>
