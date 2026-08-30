@@ -67,8 +67,8 @@ async function RoundEntriesAndQr({
         <h2 className="mb-4 text-xl font-semibold">Entries ({roundEntries.length})</h2>
         <EntryList entries={roundEntries.map((e) => ({name: e.name, rating: e.rating}))} />
       </div>
-      <div>
-        <h2 className="mb-4 text-xl font-semibold">Register to play</h2>
+      <div className="flex flex-col items-center">
+        <h2 className="mb-4 text-xl font-semibold">Please sign in</h2>
         <RegistrationQr url={registerUrl} />
       </div>
     </div>

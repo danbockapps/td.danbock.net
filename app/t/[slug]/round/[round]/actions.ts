@@ -6,10 +6,23 @@ import {getUscfLookup} from '@/lib/uscf'
 import {and, eq} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
-export async function lookupUscf(uscfId: string) {
+export async function lookupUscf(slug: string, uscfId: string) {
   if (!/^\d{8}$/.test(uscfId)) {
     return {error: 'USCF ID must be an 8-digit number'}
   }
+
+  const tournament = await db.query.tournaments.findFirst({
+    where: eq(tournaments.slug, slug),
+  })
+  if (!tournament) return {error: 'Tournament not found'}
+
+  const priorEntry = await db.query.entries.findFirst({
+    where: and(eq(entries.tournamentId, tournament.id), eq(entries.uscfId, uscfId)),
+  })
+  if (priorEntry) {
+    return {data: {name: priorEntry.name, rating: priorEntry.rating}}
+  }
+
   const result = await getUscfLookup().lookup(uscfId)
   return {data: result}
 }

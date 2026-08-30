@@ -16,7 +16,7 @@ export function RegisterForm({slug, round}: {slug: string; round: number}) {
   function submitId() {
     setError(null)
     startTransition(async () => {
-      const result = await lookupUscf(uscfId)
+      const result = await lookupUscf(slug, uscfId)
       if ('error' in result && result.error) {
         setError(result.error)
         return
