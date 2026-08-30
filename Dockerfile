@@ -15,7 +15,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN mkdir -p public
+RUN mkdir -p public data
 RUN yarn build
 
 # ---- Production image ----
