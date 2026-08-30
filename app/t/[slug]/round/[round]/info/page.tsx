@@ -1,8 +1,9 @@
-import {EntryList} from '@/components/entries/EntryList'
+import {getRoundEntries} from '@/app/t/[slug]/round/[round]/actions'
+import {LiveEntryList} from '@/components/entries/LiveEntryList'
 import {PairingList} from '@/components/pairings/PairingList'
 import {RegistrationQr} from '@/components/RegistrationQr'
 import {db} from '@/db'
-import {entries, pairings} from '@/db/schema'
+import {pairings} from '@/db/schema'
 import {and, eq} from 'drizzle-orm'
 import {headers} from 'next/headers'
 import {notFound} from 'next/navigation'
@@ -42,30 +43,29 @@ export default async function InfoPage({params}: {params: Promise<{slug: string;
           }))}
         />
       ) : (
-        <RoundEntriesAndQr tournamentId={tournament.id} round={round} registerUrl={registerUrl} />
+        <RoundEntriesAndQr slug={slug} round={round} registerUrl={registerUrl} />
       )}
     </div>
   )
 }
 
 async function RoundEntriesAndQr({
-  tournamentId,
+  slug,
   round,
   registerUrl,
 }: {
-  tournamentId: number
+  slug: string
   round: number
   registerUrl: string
 }) {
-  const roundEntries = await db.query.entries.findMany({
-    where: and(eq(entries.tournamentId, tournamentId), eq(entries.round, round)),
-  })
+  const result = await getRoundEntries(slug, round)
+  const roundEntries = result.data ?? []
 
   return (
     <div className="grid gap-8 md:grid-cols-2">
       <div>
         <h2 className="mb-4 text-xl font-semibold">Entries ({roundEntries.length})</h2>
-        <EntryList entries={roundEntries.map((e) => ({name: e.name, rating: e.rating}))} />
+        <LiveEntryList slug={slug} round={round} initialEntries={roundEntries} />
       </div>
       <div className="flex flex-col items-center">
         <h2 className="mb-4 text-xl font-semibold">Please sign in</h2>

@@ -2,9 +2,22 @@
 
 import {db} from '@/db'
 import {entries, tournaments} from '@/db/schema'
+import {broadcastEntriesChanged} from '@/lib/sse'
 import {getUscfLookup} from '@/lib/uscf'
 import {and, eq} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
+
+export async function getRoundEntries(slug: string, round: number) {
+  const tournament = await db.query.tournaments.findFirst({
+    where: eq(tournaments.slug, slug),
+  })
+  if (!tournament) return {error: 'Tournament not found'}
+
+  const roundEntries = await db.query.entries.findMany({
+    where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
+  })
+  return {data: roundEntries.map((e) => ({name: e.name, rating: e.rating}))}
+}
 
 export async function lookupUscf(slug: string, uscfId: string) {
   if (!/^\d{8}$/.test(uscfId)) {
@@ -57,6 +70,7 @@ export async function confirmRegistration(
     rating,
   })
 
+  broadcastEntriesChanged(slug, round)
   revalidatePath(`/t/${slug}`)
   return {success: true}
 }
