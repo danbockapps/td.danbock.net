@@ -64,24 +64,34 @@ export async function pairRound(
   revalidatePath('/t')
 }
 
-export async function repairRound(
-  slug: string,
-  round: number,
-  options: {higherSeedColor: 'white' | 'black'},
-) {
-  const tournament = await requireTournament(slug)
-
+async function deleteRoundPairings(tournamentId: number, round: number) {
   const existingPairings = await db.query.pairings.findMany({
-    where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
+    where: and(eq(pairings.tournamentId, tournamentId), eq(pairings.round, round)),
   })
   for (const p of existingPairings) {
     await db.delete(results).where(eq(results.pairingId, p.id))
   }
   await db
     .delete(pairings)
-    .where(and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)))
+    .where(and(eq(pairings.tournamentId, tournamentId), eq(pairings.round, round)))
+}
 
+export async function repairRound(
+  slug: string,
+  round: number,
+  options: {higherSeedColor: 'white' | 'black'},
+) {
+  const tournament = await requireTournament(slug)
+  await deleteRoundPairings(tournament.id, round)
   await pairRound(slug, round, options)
+}
+
+export async function unpairRound(slug: string, round: number) {
+  const tournament = await requireTournament(slug)
+  await deleteRoundPairings(tournament.id, round)
+
+  revalidatePath(`/admin/tournaments/${slug}`)
+  revalidatePath('/t')
 }
 
 export async function submitResult(pairingId: number, outcome: string) {

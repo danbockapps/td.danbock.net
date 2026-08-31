@@ -1,6 +1,10 @@
 'use client'
 
-import {pairRound, repairRound} from '@/app/admin/(protected)/tournaments/[slug]/actions'
+import {
+  pairRound,
+  repairRound,
+  unpairRound,
+} from '@/app/admin/(protected)/tournaments/[slug]/actions'
 import {useRouter} from 'next/navigation'
 import {useState, useTransition} from 'react'
 
@@ -27,6 +31,21 @@ export function PairRoundForm({
         } else {
           await pairRound(slug, round, {higherSeedColor})
         }
+        router.refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Something went wrong')
+      }
+    })
+  }
+
+  function submitUnpair() {
+    if (!window.confirm('Un-pair this round? This deletes all pairings and results for it.')) {
+      return
+    }
+    setError(null)
+    startTransition(async () => {
+      try {
+        await unpairRound(slug, round)
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
@@ -66,10 +85,15 @@ export function PairRoundForm({
         {pending ? 'Pairing…' : alreadyPaired ? 'Re-pair round' : 'Pair round'}
       </button>
       {alreadyPaired && (
-        <p className="mt-2 text-xs text-base-content/60">
-          This round is already paired. Re-pairing deletes existing pairings and results for this
-          round.
-        </p>
+        <>
+          <button className="btn btn-error mt-2" disabled={pending} onClick={submitUnpair}>
+            {pending ? 'Working…' : 'Un-pair round'}
+          </button>
+          <p className="mt-2 text-xs text-base-content/60">
+            This round is already paired. Re-pairing or un-pairing deletes existing pairings and
+            results for this round.
+          </p>
+        </>
       )}
     </div>
   )
