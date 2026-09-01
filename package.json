@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx db/migrate.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepare": "husky"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
@@ -31,6 +32,8 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.4.1",
     "prettier": "^3.9.6",
     "prettier-plugin-classnames": "^0.10.4",
     "prettier-plugin-organize-imports": "^4.3.0",
@@ -40,6 +43,11 @@
     "vitest": "^4.1.11"
   },
   "packageManager": "yarn@1.22.22",
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": [
+      "prettier --write"
+    ]
+  },
   "prettier": {
     "semi": false,
     "singleQuote": true,
