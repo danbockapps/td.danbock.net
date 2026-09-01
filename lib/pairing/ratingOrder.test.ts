@@ -90,3 +90,20 @@ describe('RatingOrderEngine', () => {
     expect(results).toEqual([{board: 1, whiteEntryId: 1, blackEntryId: null}])
   })
 })
+
+it('pairs six players in round 1 with no history', () => {
+  const a = entry(1, 1913)
+  const b = entry(2, 1880)
+  const c = entry(3, 1822)
+  const d = entry(4, 1607)
+  const e = entry(5, 1435)
+  const f = entry(6, 1007)
+
+  const results = engine.pair([a, b, c, d, e, f], {higherSeedColor: 'white'})
+
+  expect(results).toEqual([
+    {board: 1, whiteEntryId: 1, blackEntryId: 2},
+    {board: 2, whiteEntryId: 4, blackEntryId: 3},
+    {board: 3, whiteEntryId: 5, blackEntryId: 6},
+  ])
+})
