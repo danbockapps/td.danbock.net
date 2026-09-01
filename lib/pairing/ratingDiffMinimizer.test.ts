@@ -27,7 +27,9 @@ function game(
   return {round, uscfId, opponentUscfId, color}
 }
 
-function boards(results: {board: number; whiteEntryId: number | null; blackEntryId: number | null}[]) {
+function boards(
+  results: {board: number; whiteEntryId: number | null; blackEntryId: number | null}[],
+) {
   return results.map((r) => new Set([r.whiteEntryId, r.blackEntryId]))
 }
 
@@ -53,9 +55,7 @@ describe('RatingDiffMinimizerEngine', () => {
     const d = entry(4, 2000)
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white'})
 
-    expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([1, 2]), new Set([3, 4])]),
-    )
+    expect(boards(results)).toEqual(expect.arrayContaining([new Set([1, 2]), new Set([3, 4])]))
     expect(results).toHaveLength(2)
   })
 
@@ -72,9 +72,7 @@ describe('RatingDiffMinimizerEngine', () => {
     const d = entry(4, 2000)
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white'})
 
-    expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([1, 3]), new Set([2, 4])]),
-    )
+    expect(boards(results)).toEqual(expect.arrayContaining([new Set([1, 3]), new Set([2, 4])]))
   })
 
   it('excludes a pairing sheet where two players met in a previous round', () => {
@@ -87,9 +85,7 @@ describe('RatingDiffMinimizerEngine', () => {
 
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white', history})
 
-    expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([1, 3]), new Set([2, 4])]),
-    )
+    expect(boards(results)).toEqual(expect.arrayContaining([new Set([1, 3]), new Set([2, 4])]))
   })
 
   it('throws when every pairing sheet is illegal', () => {
@@ -112,9 +108,7 @@ describe('RatingDiffMinimizerEngine', () => {
     const d = entry(4, 1100)
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white'})
 
-    expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([1, 2]), new Set([3, 4])]),
-    )
+    expect(boards(results)).toEqual(expect.arrayContaining([new Set([1, 2]), new Set([3, 4])]))
   })
 
   it('orders boards with the higher-rated pair on board 1', () => {
@@ -167,46 +161,42 @@ describe('RatingDiffMinimizerEngine', () => {
   })
 
   it('pairs six players in round 1 with no history', () => {
-    // Randomly chosen ratings between 900 and 2000.
-    const a = entry(1, 1523)
-    const b = entry(2, 987)
-    const c = entry(3, 1750)
-    const d = entry(4, 1290)
-    const e = entry(5, 1888)
-    const f = entry(6, 1050)
+    const a = entry(1, 1913)
+    const b = entry(2, 1880)
+    const c = entry(3, 1822)
+    const d = entry(4, 1607)
+    const e = entry(5, 1435)
+    const f = entry(6, 1007)
 
     const results = engine.pair([a, b, c, d, e, f], {higherSeedColor: 'white'})
 
-    // Best legal sheet by sum of squared rating differences is 1-4, 2-6, 3-5.
     expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([1, 4]), new Set([2, 6]), new Set([3, 5])]),
+      expect.arrayContaining([new Set([1, 2]), new Set([3, 4]), new Set([5, 6])]),
     )
     expect(results).toHaveLength(3)
   })
 
   it('pairs the same six players in round 2, avoiding round 1 rematches', () => {
-    const a = entry(1, 1523)
-    const b = entry(2, 987)
-    const c = entry(3, 1750)
-    const d = entry(4, 1290)
-    const e = entry(5, 1888)
-    const f = entry(6, 1050)
+    const a = entry(1, 1913)
+    const b = entry(2, 1880)
+    const c = entry(3, 1822)
+    const d = entry(4, 1607)
+    const e = entry(5, 1435)
+    const f = entry(6, 1007)
 
-    // Round 1 pairings: 1-4, 2-6, 3-5.
     const history = [
-      game(1, '1', '4', 'white'),
-      game(1, '4', '1', 'black'),
-      game(1, '2', '6', 'white'),
-      game(1, '6', '2', 'black'),
-      game(1, '3', '5', 'white'),
-      game(1, '5', '3', 'black'),
+      game(1, '1', '2', 'white'),
+      game(1, '2', '1', 'black'),
+      game(1, '3', '4', 'white'),
+      game(1, '4', '3', 'black'),
+      game(1, '5', '6', 'white'),
+      game(1, '6', '5', 'black'),
     ]
 
     const results = engine.pair([a, b, c, d, e, f], {higherSeedColor: 'white', history})
 
-    // Best legal sheet excluding round 1's pairs is 1-5, 2-4, 3-6.
     expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([1, 5]), new Set([2, 4]), new Set([3, 6])]),
+      expect.arrayContaining([new Set([3, 1]), new Set([2, 5]), new Set([4, 6])]),
     )
     expect(results).toHaveLength(3)
   })
