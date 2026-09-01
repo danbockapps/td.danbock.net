@@ -5,7 +5,7 @@ import type {PairingInput} from './types'
 const engine = new RatingOrderEngine()
 
 function entry(entryId: number, rating: number | null): PairingInput {
-  return {entryId, name: `Player ${entryId}`, rating}
+  return {entryId, uscfId: String(entryId), name: `Player ${entryId}`, rating, team: null}
 }
 
 describe('RatingOrderEngine', () => {

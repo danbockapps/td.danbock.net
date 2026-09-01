@@ -2,8 +2,8 @@
 
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
-import {getPairingEngine} from '@/lib/pairing'
-import {and, eq} from 'drizzle-orm'
+import {getPairingEngine, type RoundHistoryEntry} from '@/lib/pairing'
+import {and, eq, lt} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
 async function requireTournament(slug: string) {
@@ -30,7 +30,7 @@ export async function updateEntry(
 export async function pairRound(
   slug: string,
   round: number,
-  options: {higherSeedColor: 'white' | 'black'},
+  options: {higherSeedColor: 'white' | 'black'; engine?: string},
 ) {
   const tournament = await requireTournament(slug)
 
@@ -44,10 +44,41 @@ export async function pairRound(
   })
   if (roundEntries.length === 0) throw new Error('No entries for this round yet')
 
-  const engine = getPairingEngine()
+  const priorPairings = await db.query.pairings.findMany({
+    where: and(eq(pairings.tournamentId, tournament.id), lt(pairings.round, round)),
+    with: {white: true, black: true},
+  })
+  const history: RoundHistoryEntry[] = priorPairings.flatMap((p) => {
+    const rows: RoundHistoryEntry[] = []
+    if (p.white) {
+      rows.push({
+        round: p.round,
+        uscfId: p.white.uscfId,
+        opponentUscfId: p.black?.uscfId ?? null,
+        color: p.black ? 'white' : null,
+      })
+    }
+    if (p.black) {
+      rows.push({
+        round: p.round,
+        uscfId: p.black.uscfId,
+        opponentUscfId: p.white?.uscfId ?? null,
+        color: p.white ? 'black' : null,
+      })
+    }
+    return rows
+  })
+
+  const engine = getPairingEngine(options.engine)
   const pairingResults = engine.pair(
-    roundEntries.map((e) => ({entryId: e.id, name: e.name, rating: e.rating})),
-    options,
+    roundEntries.map((e) => ({
+      entryId: e.id,
+      uscfId: e.uscfId,
+      name: e.name,
+      rating: e.rating,
+      team: e.team,
+    })),
+    {higherSeedColor: options.higherSeedColor, history},
   )
 
   await db.insert(pairings).values(
@@ -79,7 +110,7 @@ async function deleteRoundPairings(tournamentId: number, round: number) {
 export async function repairRound(
   slug: string,
   round: number,
-  options: {higherSeedColor: 'white' | 'black'},
+  options: {higherSeedColor: 'white' | 'black'; engine?: string},
 ) {
   const tournament = await requireTournament(slug)
   await deleteRoundPairings(tournament.id, round)

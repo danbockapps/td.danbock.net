@@ -18,6 +18,9 @@ export function PairRoundForm({
   alreadyPaired: boolean
 }) {
   const [higherSeedColor, setHigherSeedColor] = useState<'white' | 'black'>('white')
+  const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer'>(
+    'ratingDiffMinimizer',
+  )
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -27,9 +30,9 @@ export function PairRoundForm({
     startTransition(async () => {
       try {
         if (repair) {
-          await repairRound(slug, round, {higherSeedColor})
+          await repairRound(slug, round, {higherSeedColor, engine})
         } else {
-          await pairRound(slug, round, {higherSeedColor})
+          await pairRound(slug, round, {higherSeedColor, engine})
         }
         router.refresh()
       } catch (e) {
@@ -76,6 +79,30 @@ export function PairRoundForm({
             onChange={() => setHigherSeedColor('black')}
           />
           Black
+        </label>
+      </div>
+
+      <label className="fieldset-label mb-2">Pairing engine:</label>
+      <div className="mb-4 flex gap-4">
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="engine"
+            className="radio"
+            checked={engine === 'ratingOrder'}
+            onChange={() => setEngine('ratingOrder')}
+          />
+          Rating order
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="engine"
+            className="radio"
+            checked={engine === 'ratingDiffMinimizer'}
+            onChange={() => setEngine('ratingDiffMinimizer')}
+          />
+          Rating difference minimizer
         </label>
       </div>
 
