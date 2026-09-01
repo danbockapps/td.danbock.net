@@ -17,17 +17,27 @@ export class RatingOrderEngine implements PairingEngine {
       const higherSeed = sorted[i]
       const lowerSeed = sorted[i + 1]
 
+      // The higher seed alternates color board to board: the admin's chosen
+      // color on board 1, the opposite on board 2, back to the chosen color
+      // on board 3, and so on.
+      const higherSeedColor =
+        board % 2 === 1
+          ? options.higherSeedColor
+          : options.higherSeedColor === 'white'
+            ? 'black'
+            : 'white'
+
       if (!lowerSeed) {
         // Odd player out gets a bye.
         results.push({
           board: board++,
-          whiteEntryId: options.higherSeedColor === 'white' ? higherSeed.entryId : null,
-          blackEntryId: options.higherSeedColor === 'black' ? higherSeed.entryId : null,
+          whiteEntryId: higherSeedColor === 'white' ? higherSeed.entryId : null,
+          blackEntryId: higherSeedColor === 'black' ? higherSeed.entryId : null,
         })
         continue
       }
 
-      const higherSeedGetsWhite = options.higherSeedColor === 'white'
+      const higherSeedGetsWhite = higherSeedColor === 'white'
       results.push({
         board: board++,
         whiteEntryId: higherSeedGetsWhite ? higherSeed.entryId : lowerSeed.entryId,
