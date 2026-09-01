@@ -8,11 +8,11 @@ The repo on the VPS lives at `~/projects/td.danbock.net/`. `scripts/docker-run.s
 
 Create `.env.production` in the repo root on the VPS (not checked in). Required:
 
-| Variable          | Purpose                                                    |
-| ----------------- | ----------------------------------------------------------- |
-| `DATABASE_URL`    | SQLite file path inside the container. Set to `/app/data/td.sqlite`. |
-| `ADMIN_PASSWORD`  | Password for admin access.                                 |
-| `SESSION_SECRET`  | Secret used to sign session tokens.                        |
+| Variable         | Purpose                                                              |
+| ---------------- | -------------------------------------------------------------------- |
+| `DATABASE_URL`   | SQLite file path inside the container. Set to `/app/data/td.sqlite`. |
+| `ADMIN_PASSWORD` | Password for admin access.                                           |
+| `SESSION_SECRET` | Secret used to sign session tokens.                                  |
 
 `NODE_ENV`, `PORT`, and `HOSTNAME` are baked into the Dockerfile — don't set them here.
 

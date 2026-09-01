@@ -85,9 +85,7 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
       (a, b) => Math.max(ratingOf(b[0]), ratingOf(b[1])) - Math.max(ratingOf(a[0]), ratingOf(a[1])),
     )
 
-    return orderedPairs.map((pair, index) =>
-      this.assignColors(pair, options, history, index + 1),
-    )
+    return orderedPairs.map((pair, index) => this.assignColors(pair, options, history, index + 1))
   }
 
   private assignColors(
@@ -118,8 +116,7 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
       // go to the higher-rated player.
       const rank1 = strengthRank[due1.strength]
       const rank2 = strengthRank[due2.strength]
-      const p1GetsDue =
-        rank1 !== rank2 ? rank1 > rank2 : ratingOf(p1) >= ratingOf(p2)
+      const p1GetsDue = rank1 !== rank2 ? rank1 > rank2 : ratingOf(p1) >= ratingOf(p2)
       p1Color = p1GetsDue ? due1.color : opposite(due1.color)
     }
 

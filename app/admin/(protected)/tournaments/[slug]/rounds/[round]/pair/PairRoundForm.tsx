@@ -18,9 +18,7 @@ export function PairRoundForm({
   alreadyPaired: boolean
 }) {
   const [higherSeedColor, setHigherSeedColor] = useState<'white' | 'black'>('white')
-  const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer'>(
-    'ratingDiffMinimizer',
-  )
+  const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer'>('ratingDiffMinimizer')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()

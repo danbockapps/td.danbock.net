@@ -67,19 +67,12 @@
       "indexes": {
         "entries_tournament_round_idx": {
           "name": "entries_tournament_round_idx",
-          "columns": [
-            "tournament_id",
-            "round"
-          ],
+          "columns": ["tournament_id", "round"],
           "isUnique": false
         },
         "entries_tournament_round_uscf_unique": {
           "name": "entries_tournament_round_uscf_unique",
-          "columns": [
-            "tournament_id",
-            "round",
-            "uscf_id"
-          ],
+          "columns": ["tournament_id", "round", "uscf_id"],
           "isUnique": true
         }
       },
@@ -88,12 +81,8 @@
           "name": "entries_tournament_id_tournaments_id_fk",
           "tableFrom": "entries",
           "tableTo": "tournaments",
-          "columnsFrom": [
-            "tournament_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tournament_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -158,19 +147,12 @@
       "indexes": {
         "pairings_tournament_round_idx": {
           "name": "pairings_tournament_round_idx",
-          "columns": [
-            "tournament_id",
-            "round"
-          ],
+          "columns": ["tournament_id", "round"],
           "isUnique": false
         },
         "pairings_tournament_round_board_unique": {
           "name": "pairings_tournament_round_board_unique",
-          "columns": [
-            "tournament_id",
-            "round",
-            "board"
-          ],
+          "columns": ["tournament_id", "round", "board"],
           "isUnique": true
         }
       },
@@ -179,12 +161,8 @@
           "name": "pairings_tournament_id_tournaments_id_fk",
           "tableFrom": "pairings",
           "tableTo": "tournaments",
-          "columnsFrom": [
-            "tournament_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tournament_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -192,12 +170,8 @@
           "name": "pairings_white_entry_id_entries_id_fk",
           "tableFrom": "pairings",
           "tableTo": "entries",
-          "columnsFrom": [
-            "white_entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["white_entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -205,12 +179,8 @@
           "name": "pairings_black_entry_id_entries_id_fk",
           "tableFrom": "pairings",
           "tableTo": "entries",
-          "columnsFrom": [
-            "black_entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["black_entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -254,9 +224,7 @@
       "indexes": {
         "results_pairing_id_unique": {
           "name": "results_pairing_id_unique",
-          "columns": [
-            "pairing_id"
-          ],
+          "columns": ["pairing_id"],
           "isUnique": true
         }
       },
@@ -265,12 +233,8 @@
           "name": "results_pairing_id_pairings_id_fk",
           "tableFrom": "results",
           "tableTo": "pairings",
-          "columnsFrom": [
-            "pairing_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["pairing_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -321,9 +285,7 @@
       "indexes": {
         "tournaments_slug_unique": {
           "name": "tournaments_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         }
       },

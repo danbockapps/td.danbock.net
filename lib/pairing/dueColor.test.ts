@@ -45,7 +45,7 @@ describe('getDueColor', () => {
     expect(getDueColor('A', history)).toEqual({color: 'black', strength: 'absolute'})
   })
 
-  it('only considers the given player\'s games', () => {
+  it("only considers the given player's games", () => {
     const history = [game(1, 'B', 'C', 'white')]
     expect(getDueColor('A', history)).toEqual({color: null, strength: 'none'})
   })
