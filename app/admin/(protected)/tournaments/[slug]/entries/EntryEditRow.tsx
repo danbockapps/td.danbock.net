@@ -9,15 +9,18 @@ export function EntryEditRow({
   rounds,
   initialName,
   initialRating,
+  initialTeam,
 }: {
   tournamentId: number
   uscfId: string
   rounds: number[]
   initialName: string
   initialRating: number | null
+  initialTeam: string | null
 }) {
   const [name, setName] = useState(initialName)
   const [rating, setRating] = useState(initialRating === null ? '' : String(initialRating))
+  const [team, setTeam] = useState(initialTeam ?? '')
   const [pending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
 
@@ -26,6 +29,7 @@ export function EntryEditRow({
       await updateEntry(tournamentId, uscfId, {
         name,
         rating: rating.trim() === '' ? null : Number(rating),
+        team: team.trim() === '' ? null : team.trim(),
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 1500)
@@ -48,6 +52,14 @@ export function EntryEditRow({
           placeholder="Unrated"
           value={rating}
           onChange={(e) => setRating(e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          className="input input-sm w-32"
+          placeholder="No team"
+          value={team}
+          onChange={(e) => setTeam(e.target.value)}
         />
       </td>
       <td>

@@ -22,6 +22,7 @@ export const entries = sqliteTable(
     uscfId: text('uscf_id').notNull(),
     name: text('name').notNull(),
     rating: integer('rating'),
+    team: text('team'),
     createdAt: integer('created_at')
       .notNull()
       .$defaultFn(() => Date.now()),

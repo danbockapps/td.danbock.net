@@ -19,7 +19,7 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
 
   const players = new Map<
     string,
-    {uscfId: string; name: string; rating: number | null; rounds: number[]}
+    {uscfId: string; name: string; rating: number | null; team: string | null; rounds: number[]}
   >()
   for (const e of allEntries) {
     const existing = players.get(e.uscfId)
@@ -30,6 +30,7 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
         uscfId: e.uscfId,
         name: e.name,
         rating: e.rating,
+        team: e.team,
         rounds: [e.round],
       })
     }
@@ -50,6 +51,7 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
                 <th>Rounds</th>
                 <th>Name</th>
                 <th>Rating</th>
+                <th>Team</th>
                 <th></th>
               </tr>
             </thead>
@@ -62,6 +64,7 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
                   rounds={p.rounds}
                   initialName={p.name}
                   initialRating={p.rating}
+                  initialTeam={p.team}
                 />
               ))}
             </tbody>
