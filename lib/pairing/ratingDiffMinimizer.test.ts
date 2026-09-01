@@ -166,6 +166,51 @@ describe('RatingDiffMinimizerEngine', () => {
     expect(results).toEqual([{board: 1, whiteEntryId: 2, blackEntryId: 1}])
   })
 
+  it('pairs six players in round 1 with no history', () => {
+    // Randomly chosen ratings between 900 and 2000.
+    const a = entry(1, 1523)
+    const b = entry(2, 987)
+    const c = entry(3, 1750)
+    const d = entry(4, 1290)
+    const e = entry(5, 1888)
+    const f = entry(6, 1050)
+
+    const results = engine.pair([a, b, c, d, e, f], {higherSeedColor: 'white'})
+
+    // Best legal sheet by sum of squared rating differences is 1-4, 2-6, 3-5.
+    expect(boards(results)).toEqual(
+      expect.arrayContaining([new Set([1, 4]), new Set([2, 6]), new Set([3, 5])]),
+    )
+    expect(results).toHaveLength(3)
+  })
+
+  it('pairs the same six players in round 2, avoiding round 1 rematches', () => {
+    const a = entry(1, 1523)
+    const b = entry(2, 987)
+    const c = entry(3, 1750)
+    const d = entry(4, 1290)
+    const e = entry(5, 1888)
+    const f = entry(6, 1050)
+
+    // Round 1 pairings: 1-4, 2-6, 3-5.
+    const history = [
+      game(1, '1', '4', 'white'),
+      game(1, '4', '1', 'black'),
+      game(1, '2', '6', 'white'),
+      game(1, '6', '2', 'black'),
+      game(1, '3', '5', 'white'),
+      game(1, '5', '3', 'black'),
+    ]
+
+    const results = engine.pair([a, b, c, d, e, f], {higherSeedColor: 'white', history})
+
+    // Best legal sheet excluding round 1's pairs is 1-5, 2-4, 3-6.
+    expect(boards(results)).toEqual(
+      expect.arrayContaining([new Set([1, 5]), new Set([2, 4]), new Set([3, 6])]),
+    )
+    expect(results).toHaveLength(3)
+  })
+
   it('falls back to higherSeedColor for the higher-rated player when neither has a preference', () => {
     const a = entry(1, 2000)
     const b = entry(2, 1000)
