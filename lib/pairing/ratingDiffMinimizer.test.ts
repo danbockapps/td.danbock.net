@@ -172,7 +172,7 @@ describe('RatingDiffMinimizerEngine', () => {
 
     expect(results).toEqual([
       {board: 1, whiteEntryId: 1, blackEntryId: 2},
-      {board: 2, whiteEntryId: 3, blackEntryId: 4}, // TODO
+      {board: 2, whiteEntryId: 4, blackEntryId: 3},
       {board: 3, whiteEntryId: 5, blackEntryId: 6},
     ])
   })

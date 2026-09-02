@@ -94,9 +94,12 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
 
     if (due1.color === null && due2.color === null) {
       // Neither player has a preference: higher-rated player gets the
-      // admin's chosen color, mirroring RatingOrderEngine's default.
+      // admin's chosen color, alternating board to board, mirroring
+      // RatingOrderEngine's default.
+      const higherSeedColor =
+        board % 2 === 1 ? options.higherSeedColor : opposite(options.higherSeedColor)
       const p1IsHigher = ratingOf(p1) >= ratingOf(p2)
-      p1Color = p1IsHigher ? options.higherSeedColor : opposite(options.higherSeedColor)
+      p1Color = p1IsHigher ? higherSeedColor : opposite(higherSeedColor)
     } else if (due1.color === null) {
       p1Color = opposite(due2.color as 'white' | 'black')
     } else if (due2.color === null) {
