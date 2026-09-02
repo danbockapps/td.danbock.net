@@ -118,6 +118,7 @@ export async function pairRound(
     })),
   )
 
+  broadcastEntriesChanged(slug, round)
   revalidatePath(`/admin/tournaments/${slug}`)
   revalidatePath('/t')
 }
@@ -148,6 +149,7 @@ export async function unpairRound(slug: string, round: number) {
   const tournament = await requireTournament(slug)
   await deleteRoundPairings(tournament.id, round)
 
+  broadcastEntriesChanged(slug, round)
   revalidatePath(`/admin/tournaments/${slug}`)
   revalidatePath('/t')
 }
