@@ -4,7 +4,7 @@ import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
 import {getPairingEngine, type RoundHistoryEntry} from '@/lib/pairing'
 import {broadcastEntriesChanged} from '@/lib/sse'
-import {and, eq, lt} from 'drizzle-orm'
+import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
 async function requireTournament(slug: string) {
@@ -32,6 +32,36 @@ export async function updateEntry(
     })
     if (tournament) broadcastEntriesChanged(tournament.slug, updated.round)
   }
+
+  revalidatePath('/admin/tournaments')
+  revalidatePath('/t')
+}
+
+export async function deleteEntry(tournamentId: number, uscfId: string, round: number) {
+  const entry = await db.query.entries.findFirst({
+    where: and(
+      eq(entries.tournamentId, tournamentId),
+      eq(entries.uscfId, uscfId),
+      eq(entries.round, round),
+    ),
+  })
+  if (!entry) return
+
+  const pairing = await db.query.pairings.findFirst({
+    where: and(
+      eq(pairings.tournamentId, tournamentId),
+      eq(pairings.round, round),
+      or(eq(pairings.whiteEntryId, entry.id), eq(pairings.blackEntryId, entry.id)),
+    ),
+  })
+  if (pairing) throw new Error('Unpair this round before removing the player from it')
+
+  await db.delete(entries).where(eq(entries.id, entry.id))
+
+  const tournament = await db.query.tournaments.findFirst({
+    where: eq(tournaments.id, tournamentId),
+  })
+  if (tournament) broadcastEntriesChanged(tournament.slug, round)
 
   revalidatePath('/admin/tournaments')
   revalidatePath('/t')

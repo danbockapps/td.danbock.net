@@ -2,7 +2,7 @@ import {db} from '@/db'
 import {entries} from '@/db/schema'
 import {eq} from 'drizzle-orm'
 import {notFound} from 'next/navigation'
-import {EntryEditRow} from './EntryEditRow'
+import {EntryEditCard, EntryEditRow} from './EntryEditRow'
 
 export default async function EditEntriesPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
@@ -44,32 +44,48 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
       {allPlayers.length === 0 ? (
         <p className="text-base-content/60">No entries yet.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Rounds</th>
-                <th>Name</th>
-                <th>Rating</th>
-                <th>Team</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {allPlayers.map((p) => (
-                <EntryEditRow
-                  key={p.uscfId}
-                  tournamentId={tournament.id}
-                  uscfId={p.uscfId}
-                  rounds={p.rounds}
-                  initialName={p.name}
-                  initialRating={p.rating}
-                  initialTeam={p.team}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Rounds</th>
+                  <th>Name</th>
+                  <th>Rating</th>
+                  <th>Team</th>
+                  <th></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {allPlayers.map((p) => (
+                  <EntryEditRow
+                    key={p.uscfId}
+                    tournamentId={tournament.id}
+                    uscfId={p.uscfId}
+                    rounds={p.rounds}
+                    initialName={p.name}
+                    initialRating={p.rating}
+                    initialTeam={p.team}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex flex-col gap-3 md:hidden">
+            {allPlayers.map((p) => (
+              <EntryEditCard
+                key={p.uscfId}
+                tournamentId={tournament.id}
+                uscfId={p.uscfId}
+                rounds={p.rounds}
+                initialName={p.name}
+                initialRating={p.rating}
+                initialTeam={p.team}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

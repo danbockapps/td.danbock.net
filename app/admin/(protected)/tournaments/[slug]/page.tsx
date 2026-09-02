@@ -51,7 +51,7 @@ export default async function TournamentAdminPage({params}: {params: Promise<{sl
         </Link>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="hidden overflow-x-auto md:block">
         <table className="table">
           <thead>
             <tr>
@@ -92,6 +92,43 @@ export default async function TournamentAdminPage({params}: {params: Promise<{sl
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-col gap-3 md:hidden">
+        {roundInfo.map(({round, entryCount, pairingCount}) => (
+          <div key={round} className="card bg-base-200">
+            <div className="card-body gap-3 p-4">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold">Round {round}</span>
+                <span className="text-sm text-base-content/60">
+                  {entryCount} {entryCount === 1 ? 'entry' : 'entries'} ·{' '}
+                  {pairingCount > 0 ? 'Paired' : 'Not paired'}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/admin/tournaments/${slug}/rounds/${round}/pair`}
+                  className="btn btn-xs"
+                >
+                  Pair
+                </Link>
+                <Link
+                  href={`/admin/tournaments/${slug}/rounds/${round}/results`}
+                  className="btn btn-xs"
+                >
+                  Results
+                </Link>
+                <Link
+                  href={`/t/${slug}/round/${round}/info`}
+                  className="btn btn-xs"
+                  target="_blank"
+                >
+                  Info screen
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
