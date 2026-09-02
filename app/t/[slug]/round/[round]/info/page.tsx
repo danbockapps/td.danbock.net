@@ -34,14 +34,16 @@ export default async function InfoPage({params}: {params: Promise<{slug: string;
       <p className="mb-8 text-xl text-base-content/60">Round {round}</p>
 
       {roundPairings.length > 0 ? (
-        <PairingList
-          pairings={roundPairings.map((p) => ({
-            board: p.board,
-            white: p.white ? {name: p.white.name, rating: p.white.rating} : null,
-            black: p.black ? {name: p.black.name, rating: p.black.rating} : null,
-            outcome: p.result?.outcome,
-          }))}
-        />
+        <div className="mx-auto w-fit max-w-full">
+          <PairingList
+            pairings={roundPairings.map((p) => ({
+              board: p.board,
+              white: p.white ? {name: p.white.name, rating: p.white.rating} : null,
+              black: p.black ? {name: p.black.name, rating: p.black.rating} : null,
+              outcome: p.result?.outcome,
+            }))}
+          />
+        </div>
       ) : (
         <RoundEntriesAndQr slug={slug} round={round} registerUrl={registerUrl} />
       )}
