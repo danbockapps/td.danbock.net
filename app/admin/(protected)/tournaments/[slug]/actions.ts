@@ -70,16 +70,22 @@ export async function pairRound(
   })
 
   const engine = getPairingEngine(options.engine)
-  const pairingResults = engine.pair(
-    roundEntries.map((e) => ({
-      entryId: e.id,
-      uscfId: e.uscfId,
-      name: e.name,
-      rating: e.rating,
-      team: e.team,
-    })),
-    {higherSeedColor: options.higherSeedColor, history},
-  )
+  let pairingResults
+  try {
+    pairingResults = engine.pair(
+      roundEntries.map((e) => ({
+        entryId: e.id,
+        uscfId: e.uscfId,
+        name: e.name,
+        rating: e.rating,
+        team: e.team,
+      })),
+      {higherSeedColor: options.higherSeedColor, history},
+    )
+  } catch (e) {
+    console.error(`Pairing engine failed for ${slug} round ${round}:`, e)
+    throw new Error(e instanceof Error ? e.message : 'Pairing engine failed')
+  }
 
   await db.insert(pairings).values(
     pairingResults.map((p) => ({
