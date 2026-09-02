@@ -3,6 +3,7 @@
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
 import {getPairingEngine, type RoundHistoryEntry} from '@/lib/pairing'
+import {broadcastEntriesChanged} from '@/lib/sse'
 import {and, eq, lt} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
@@ -19,10 +20,19 @@ export async function updateEntry(
   uscfId: string,
   data: {name: string; rating: number | null; team: string | null},
 ) {
-  await db
+  const [updated] = await db
     .update(entries)
     .set({name: data.name, rating: data.rating, team: data.team})
     .where(and(eq(entries.tournamentId, tournamentId), eq(entries.uscfId, uscfId)))
+    .returning()
+
+  if (updated) {
+    const tournament = await db.query.tournaments.findFirst({
+      where: eq(tournaments.id, tournamentId),
+    })
+    if (tournament) broadcastEntriesChanged(tournament.slug, updated.round)
+  }
+
   revalidatePath('/admin/tournaments')
   revalidatePath('/t')
 }
