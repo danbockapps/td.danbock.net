@@ -9,30 +9,36 @@ import type {
 
 const UNRATED_DEFAULT = 100
 
+// How many of the lowest-scoring legal pairing sheets to retain, in case a
+// future feature wants to show alternatives beyond just the best one.
+const TOP_SHEETS_TO_KEEP = 10
+
 type Pair = [PairingInput, PairingInput]
 
 const ratingOf = (entry: PairingInput): number => entry.rating ?? UNRATED_DEFAULT
 
 const pairKey = (a: string, b: string): string => [a, b].sort().join('|')
 
-// All color-agnostic perfect matchings of `entries`. Fixes the first
-// remaining entry and tries every possible partner for it, recursing on
-// the rest.
-function generatePairingSheets(entries: PairingInput[]): Pair[][] {
-  if (entries.length === 0) return [[]]
+// All color-agnostic perfect matchings of `entries`, yielded one at a time
+// rather than materialized as a list — the number of matchings grows as
+// (n-1)!!, so holding them all in memory is infeasible past ~16 entries.
+// Fixes the first remaining entry and tries every possible partner for it,
+// recursing on the rest.
+function* generatePairingSheets(entries: PairingInput[]): Generator<Pair[]> {
+  if (entries.length === 0) {
+    yield []
+    return
+  }
 
   const [first, ...rest] = entries
-  const sheets: Pair[][] = []
 
   for (let i = 0; i < rest.length; i++) {
     const partner = rest[i]
     const remaining = [...rest.slice(0, i), ...rest.slice(i + 1)]
     for (const sheet of generatePairingSheets(remaining)) {
-      sheets.push([[first, partner], ...sheet])
+      yield [[first, partner], ...sheet]
     }
   }
-
-  return sheets
 }
 
 export class RatingDiffMinimizerEngine implements PairingEngine {
@@ -56,23 +62,34 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
         return true
       })
 
-    const legalSheets = generatePairingSheets(entries).filter(isLegal)
-    if (legalSheets.length === 0) {
-      throw new Error('No legal pairing sheet found for this round')
-    }
-
     const scoreOf = (sheet: Pair[]): number =>
       sheet.reduce((sum, [a, b]) => sum + (ratingOf(a) - ratingOf(b)) ** 2, 0)
 
-    let bestSheet = legalSheets[0]
-    let bestScore = scoreOf(bestSheet)
-    for (const sheet of legalSheets.slice(1)) {
+    // Keep only the best TOP_SHEETS_TO_KEEP legal sheets seen so far, sorted
+    // ascending by score, instead of materializing every legal sheet.
+    const topSheets: {sheet: Pair[]; score: number}[] = []
+
+    for (const sheet of generatePairingSheets(entries)) {
+      if (!isLegal(sheet)) continue
+
       const score = scoreOf(sheet)
-      if (score < bestScore) {
-        bestSheet = sheet
-        bestScore = score
+      if (
+        topSheets.length === TOP_SHEETS_TO_KEEP &&
+        score >= topSheets[topSheets.length - 1].score
+      ) {
+        continue
       }
+
+      const insertAt = topSheets.findIndex((entry) => score < entry.score)
+      topSheets.splice(insertAt === -1 ? topSheets.length : insertAt, 0, {sheet, score})
+      if (topSheets.length > TOP_SHEETS_TO_KEEP) topSheets.pop()
     }
+
+    if (topSheets.length === 0) {
+      throw new Error('No legal pairing sheet found for this round')
+    }
+
+    const bestSheet = topSheets[0].sheet
 
     const orderedPairs = [...bestSheet].sort(
       (a, b) => Math.max(ratingOf(b[0]), ratingOf(b[1])) - Math.max(ratingOf(a[0]), ratingOf(a[1])),

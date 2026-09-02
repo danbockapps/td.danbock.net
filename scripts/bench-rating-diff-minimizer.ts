@@ -8,10 +8,7 @@
 import {RatingDiffMinimizerEngine} from '../lib/pairing/ratingDiffMinimizer'
 import type {PairingInput} from '../lib/pairing/types'
 
-// Kept conservative: the engine materializes every perfect matching as an
-// array before scoring, so it OOMs (not just slows down) well before 30s
-// of wall time would suggest — n=16 took ~9s and n=18 crashed the process.
-const MAX_MS = 5_000
+const MAX_MS = 30_000
 const SIZES = [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
 
 function makeEntries(n: number): PairingInput[] {
