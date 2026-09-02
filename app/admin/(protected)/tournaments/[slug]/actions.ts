@@ -40,14 +40,16 @@ export async function updateEntry(
 export async function pairRound(
   slug: string,
   round: number,
-  options: {higherSeedColor: 'white' | 'black'; engine?: string},
+  options: {higherSeedColor: 'white' | 'black'; engine?: string; dryRun?: boolean},
 ) {
   const tournament = await requireTournament(slug)
 
-  const existing = await db.query.pairings.findFirst({
-    where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
-  })
-  if (existing) throw new Error('This round has already been paired')
+  if (!options.dryRun) {
+    const existing = await db.query.pairings.findFirst({
+      where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
+    })
+    if (existing) throw new Error('This round has already been paired')
+  }
 
   const roundEntries = await db.query.entries.findMany({
     where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
@@ -95,6 +97,15 @@ export async function pairRound(
   } catch (e) {
     console.error(`Pairing engine failed for ${slug} round ${round}:`, e)
     throw new Error(e instanceof Error ? e.message : 'Pairing engine failed')
+  }
+
+  if (options.dryRun) {
+    const entriesById = new Map(roundEntries.map((e) => [e.id, e]))
+    return pairingResults.map((p) => ({
+      board: p.board,
+      white: p.whiteEntryId ? (entriesById.get(p.whiteEntryId) ?? null) : null,
+      black: p.blackEntryId ? (entriesById.get(p.blackEntryId) ?? null) : null,
+    }))
   }
 
   await db.insert(pairings).values(
