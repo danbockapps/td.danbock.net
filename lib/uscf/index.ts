@@ -1,9 +1,15 @@
 import {MockUscfLookup} from './mock'
+import {OtbfeedUscfLookup} from './otbfeed'
 import type {UscfLookup} from './types'
 
 export type {UscfLookup, UscfLookupResult} from './types'
 
 export function getUscfLookup(): UscfLookup {
-  // Real API implementation TBD once the USCF API shape is known.
+  const provider = process.env.USCF_PROVIDER
+
+  if (provider === 'otbfeed') {
+    return new OtbfeedUscfLookup()
+  }
+
   return new MockUscfLookup()
 }

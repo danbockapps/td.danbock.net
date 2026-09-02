@@ -6,3 +6,13 @@ export interface UscfLookupResult {
 export interface UscfLookup {
   lookup(uscfId: string): Promise<UscfLookupResult>
 }
+
+export interface Member {
+  id: string
+  firstName: string
+  lastName: string
+  ratings: {
+    rating: number
+    ratingSystem: 'R' | 'Q' | 'B' | 'OR' | 'OQ' | 'OB'
+  }[]
+}
