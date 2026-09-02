@@ -10,7 +10,7 @@ export type {
   RoundHistoryEntry,
 } from './types'
 export {getDueColor} from './dueColor'
-export type {DueColor, DueColorStrength} from './dueColor'
+export type {DueColor} from './dueColor'
 
 const engines: Record<string, () => PairingEngine> = {
   ratingOrder: () => new RatingOrderEngine(),

@@ -1,4 +1,4 @@
-import {getDueColor, type DueColorStrength} from './dueColor'
+import {getDueColor} from './dueColor'
 import type {
   PairingEngine,
   PairingInput,
@@ -10,13 +10,6 @@ import type {
 const UNRATED_DEFAULT = 100
 
 type Pair = [PairingInput, PairingInput]
-
-const strengthRank: Record<DueColorStrength, number> = {
-  none: 0,
-  weak: 1,
-  strong: 2,
-  absolute: 3,
-}
 
 const ratingOf = (entry: PairingInput): number => entry.rating ?? UNRATED_DEFAULT
 
@@ -114,9 +107,10 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
     } else {
       // Conflict: same due color for both. Stronger preference wins; ties
       // go to the higher-rated player.
-      const rank1 = strengthRank[due1.strength]
-      const rank2 = strengthRank[due2.strength]
-      const p1GetsDue = rank1 !== rank2 ? rank1 > rank2 : ratingOf(p1) >= ratingOf(p2)
+      const p1GetsDue =
+        due1.strength !== due2.strength
+          ? due1.strength > due2.strength
+          : ratingOf(p1) >= ratingOf(p2)
       p1Color = p1GetsDue ? due1.color : opposite(due1.color)
     }
 

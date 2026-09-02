@@ -1,10 +1,11 @@
 import type {RoundHistoryEntry} from './types'
 
-export type DueColorStrength = 'none' | 'weak' | 'strong' | 'absolute'
-
 export interface DueColor {
   color: 'white' | 'black' | null
-  strength: DueColorStrength
+  // Length of the player's current same-color streak. Higher means a
+  // stronger claim to the opposite color: someone with 3 blacks in a row
+  // is more due for white than someone with 2 blacks in a row.
+  strength: number
 }
 
 const opposite = (color: 'white' | 'black'): 'white' | 'black' =>
@@ -16,16 +17,16 @@ export function getDueColor(uscfId: string, history: RoundHistoryEntry[]): DueCo
     .filter((h) => h.uscfId === uscfId && h.color !== null)
     .sort((a, b) => a.round - b.round)
 
-  if (games.length === 0) return {color: null, strength: 'none'}
+  if (games.length === 0) return {color: null, strength: 0}
 
   const mostRecent = games[games.length - 1].color as 'white' | 'black'
   const dueColor = opposite(mostRecent)
 
-  if (games.length === 1) return {color: dueColor, strength: 'strong'}
-
-  const secondMostRecent = games[games.length - 2].color as 'white' | 'black'
-  return {
-    color: dueColor,
-    strength: secondMostRecent === mostRecent ? 'absolute' : 'weak',
+  let streak = 0
+  for (let i = games.length - 1; i >= 0; i--) {
+    if (games[i].color !== mostRecent) break
+    streak++
   }
+
+  return {color: dueColor, strength: streak}
 }
