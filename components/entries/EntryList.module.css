@@ -1,0 +1,14 @@
+@keyframes entry-row-in {
+  from {
+    transform: translateX(50rem);
+    background-color: var(--color-success);
+  }
+  to {
+    transform: translateX(0);
+    background-color: var(--color-success);
+  }
+}
+
+.entryIn {
+  animation: entry-row-in 10s ease-out;
+}

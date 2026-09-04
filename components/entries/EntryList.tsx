@@ -1,4 +1,5 @@
 import {formatRating} from '@/lib/format'
+import styles from './EntryList.module.css'
 
 export interface EntryListItem {
   round?: number
@@ -36,7 +37,7 @@ function EntryTable({
         {entries.map((e, i) => (
           <tr
             key={`${e.round ?? 0}-${e.name}-${i}`}
-            className={newNames?.has(e.name) ? 'animate-entry-in' : undefined}
+            className={newNames?.has(e.name) ? styles.entryIn : undefined}
           >
             <td>{i + 1}</td>
             {showRound && <td>{e.round}</td>}
