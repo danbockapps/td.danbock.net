@@ -13,7 +13,15 @@ function byRatingDesc(a: EntryListItem, b: EntryListItem) {
   return b.rating - a.rating
 }
 
-function EntryTable({entries, showRound}: {entries: EntryListItem[]; showRound: boolean}) {
+function EntryTable({
+  entries,
+  showRound,
+  newNames,
+}: {
+  entries: EntryListItem[]
+  showRound: boolean
+  newNames?: Set<string>
+}) {
   return (
     <table className="table">
       <thead>
@@ -26,7 +34,10 @@ function EntryTable({entries, showRound}: {entries: EntryListItem[]; showRound: 
       </thead>
       <tbody>
         {entries.map((e, i) => (
-          <tr key={`${e.round ?? 0}-${e.name}-${i}`}>
+          <tr
+            key={`${e.round ?? 0}-${e.name}-${i}`}
+            className={newNames?.has(e.name) ? 'animate-entry-in' : undefined}
+          >
             <td>{i + 1}</td>
             {showRound && <td>{e.round}</td>}
             <td>{e.name}</td>
@@ -41,9 +52,11 @@ function EntryTable({entries, showRound}: {entries: EntryListItem[]; showRound: 
 export function EntryList({
   entries,
   showRound = false,
+  newNames,
 }: {
   entries: EntryListItem[]
   showRound?: boolean
+  newNames?: Set<string>
 }) {
   if (entries.length === 0) {
     return <p className="text-base-content/60">No entries yet.</p>
@@ -52,7 +65,11 @@ export function EntryList({
   if (!showRound) {
     return (
       <div className="overflow-x-auto">
-        <EntryTable entries={[...entries].sort(byRatingDesc)} showRound={false} />
+        <EntryTable
+          entries={[...entries].sort(byRatingDesc)}
+          showRound={false}
+          newNames={newNames}
+        />
       </div>
     )
   }
@@ -69,6 +86,7 @@ export function EntryList({
           <EntryTable
             entries={entries.filter((e) => e.round === round).sort(byRatingDesc)}
             showRound={false}
+            newNames={newNames}
           />
         </div>
       ))}

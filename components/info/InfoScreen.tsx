@@ -4,7 +4,7 @@ import {getRoundEntries, getRoundPairings} from '@/app/t/[slug]/round/[round]/ac
 import {EntryList, type EntryListItem} from '@/components/entries/EntryList'
 import {PairingList, type PairingListItem} from '@/components/pairings/PairingList'
 import {RegistrationQr} from '@/components/RegistrationQr'
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 
 export function InfoScreen({
   slug,
@@ -21,6 +21,8 @@ export function InfoScreen({
 }) {
   const [entries, setEntries] = useState(initialEntries)
   const [pairings, setPairings] = useState(initialPairings)
+  const [newNames, setNewNames] = useState<Set<string>>(new Set())
+  const entriesRef = useRef(initialEntries)
 
   useEffect(() => {
     const source = new EventSource(`/t/${slug}/round/${round}/info/events`)
@@ -29,7 +31,14 @@ export function InfoScreen({
         if (result.data) setPairings(result.data)
       })
       getRoundEntries(slug, round).then((result) => {
-        if (result.data) setEntries(result.data)
+        if (!result.data) return
+        const previousNames = new Set(entriesRef.current.map((e) => e.name))
+        const added = new Set(
+          result.data.filter((e) => !previousNames.has(e.name)).map((e) => e.name),
+        )
+        entriesRef.current = result.data
+        setEntries(result.data)
+        setNewNames(added)
       })
     })
     return () => source.close()
@@ -47,7 +56,7 @@ export function InfoScreen({
     <div className="grid gap-8 md:grid-cols-2">
       <div>
         <h2 className="mb-4 text-xl font-semibold">Entries ({entries.length})</h2>
-        <EntryList entries={entries} />
+        <EntryList entries={entries} newNames={newNames} />
       </div>
       <div className="flex flex-col items-center">
         <h2 className="mb-4 text-xl font-semibold">Please sign in</h2>
