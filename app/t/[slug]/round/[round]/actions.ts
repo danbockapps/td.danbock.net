@@ -41,10 +41,6 @@ export async function getRoundPairings(slug: string, round: number) {
 }
 
 export async function lookupUscf(slug: string, uscfId: string) {
-  if (!/^\d{8}$/.test(uscfId)) {
-    return {error: 'USCF ID must be an 8-digit number'}
-  }
-
   const tournament = await db.query.tournaments.findFirst({
     where: eq(tournaments.slug, slug),
   })
