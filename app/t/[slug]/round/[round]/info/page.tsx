@@ -1,8 +1,19 @@
 import {getRoundEntries, getRoundPairings} from '@/app/t/[slug]/round/[round]/actions'
 import {InfoScreen} from '@/components/info/InfoScreen'
 import {db} from '@/db'
+import {networkInterfaces} from 'os'
 import {headers} from 'next/headers'
 import {notFound} from 'next/navigation'
+
+function getDevHost(fallback: string) {
+  const [, port] = fallback.split(':')
+  for (const iface of Object.values(networkInterfaces()).flat()) {
+    if (iface?.family === 'IPv4' && !iface.internal) {
+      return port ? `${iface.address}:${port}` : iface.address
+    }
+  }
+  return fallback
+}
 
 export default async function InfoPage({params}: {params: Promise<{slug: string; round: string}>}) {
   const {slug, round: roundParam} = await params
@@ -19,8 +30,11 @@ export default async function InfoPage({params}: {params: Promise<{slug: string;
   ])
 
   const headerList = await headers()
-  const host = headerList.get('host')
   const proto = headerList.get('x-forwarded-proto') ?? 'https'
+  const host =
+    process.env.NODE_ENV === 'development'
+      ? getDevHost(headerList.get('host') ?? 'localhost')
+      : headerList.get('host')
   const registerUrl = `${proto}://${host}/t/${slug}/round/${round}/register`
 
   return (
