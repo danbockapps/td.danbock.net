@@ -97,7 +97,7 @@ export function RegisterForm({slug, round}: {slug: string; round: number}) {
       <button
         className="btn btn-primary"
         onClick={submitId}
-        disabled={pending || uscfId.length !== 8}
+        disabled={pending || uscfId.length === 0}
       >
         {pending ? 'Looking up…' : 'Look up'}
       </button>
