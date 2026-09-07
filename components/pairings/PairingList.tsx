@@ -1,4 +1,5 @@
 import {formatRating, formatResult} from '@/lib/format'
+import styles from './PairingList.module.css'
 
 export interface PairingListItem {
   round?: number
@@ -22,7 +23,11 @@ function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showR
       </thead>
       <tbody>
         {pairings.map((p, i) => (
-          <tr key={`${p.round ?? 0}-${p.board}-${i}`}>
+          <tr
+            key={`${p.round ?? 0}-${p.board}-${i}`}
+            className={styles.rowIn}
+            style={{animationDelay: `${Math.min(i, 12) * 220}ms`}}
+          >
             {showRound && <td>{p.round}</td>}
             <td>{p.board}</td>
             <td>{p.white ? `${p.white.name} (${formatRating(p.white.rating)})` : 'Bye'}</td>

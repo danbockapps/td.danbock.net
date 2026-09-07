@@ -1,0 +1,25 @@
+@keyframes pairing-row-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-6rem) rotate(-10deg) scale(1.6);
+  }
+  45% {
+    opacity: 1;
+    transform: translateX(0.5rem) rotate(4deg) scale(1.1);
+  }
+  65% {
+    transform: translateX(-0.25rem) rotate(-2deg) scale(0.97);
+  }
+  82% {
+    transform: translateX(0.1rem) rotate(1deg) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) rotate(0deg) scale(1);
+  }
+}
+
+.rowIn {
+  transform-origin: left center;
+  animation: pairing-row-in 1.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
