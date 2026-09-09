@@ -2,7 +2,7 @@
 
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
-import {getPairingEngine, type RoundHistoryEntry} from '@/lib/pairing'
+import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
 import {broadcastEntriesChanged} from '@/lib/sse'
 import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
@@ -112,18 +112,24 @@ export async function pairRound(
   })
 
   const engine = getPairingEngine(options.engine)
-  let pairingResults
+  const engineEntries = roundEntries.map((e) => ({
+    entryId: e.id,
+    uscfId: e.uscfId,
+    name: e.name,
+    rating: e.rating,
+    team: e.team,
+  }))
+  const engineOptions = {higherSeedColor: options.higherSeedColor, history}
+
+  let pairingResults: PairingResult[]
+  let alternativeSheets: PairingResult[][] | undefined
   try {
-    pairingResults = engine.pair(
-      roundEntries.map((e) => ({
-        entryId: e.id,
-        uscfId: e.uscfId,
-        name: e.name,
-        rating: e.rating,
-        team: e.team,
-      })),
-      {higherSeedColor: options.higherSeedColor, history},
-    )
+    if (options.dryRun && engine.pairAlternatives) {
+      alternativeSheets = engine.pairAlternatives(engineEntries, engineOptions)
+      pairingResults = alternativeSheets[0]
+    } else {
+      pairingResults = engine.pair(engineEntries, engineOptions)
+    }
   } catch (e) {
     console.error(`Pairing engine failed for ${slug} round ${round}:`, e)
     throw new Error(e instanceof Error ? e.message : 'Pairing engine failed')
@@ -131,11 +137,17 @@ export async function pairRound(
 
   if (options.dryRun) {
     const entriesById = new Map(roundEntries.map((e) => [e.id, e]))
-    return pairingResults.map((p) => ({
-      board: p.board,
-      white: p.whiteEntryId ? (entriesById.get(p.whiteEntryId) ?? null) : null,
-      black: p.blackEntryId ? (entriesById.get(p.blackEntryId) ?? null) : null,
-    }))
+    const toPreview = (sheet: typeof pairingResults) =>
+      sheet.map((p) => ({
+        board: p.board,
+        white: p.whiteEntryId ? (entriesById.get(p.whiteEntryId) ?? null) : null,
+        black: p.blackEntryId ? (entriesById.get(p.blackEntryId) ?? null) : null,
+      }))
+
+    return {
+      best: toPreview(pairingResults),
+      alternatives: (alternativeSheets ?? [pairingResults]).slice(1).map(toPreview),
+    }
   }
 
   await db.insert(pairings).values(

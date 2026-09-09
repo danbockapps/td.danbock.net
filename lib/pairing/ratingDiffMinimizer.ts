@@ -9,8 +9,8 @@ import type {
 
 const UNRATED_DEFAULT = 100
 
-// How many of the lowest-scoring legal pairing sheets to retain, in case a
-// future feature wants to show alternatives beyond just the best one.
+// How many of the lowest-scoring legal pairing sheets to retain, so a dry
+// run can show alternatives beyond just the best one.
 const TOP_SHEETS_TO_KEEP = 10
 
 type Pair = [PairingInput, PairingInput]
@@ -43,10 +43,14 @@ function* generatePairingSheets(entries: PairingInput[]): Generator<Pair[]> {
 
 export class RatingDiffMinimizerEngine implements PairingEngine {
   pair(entries: PairingInput[], options: PairingOptions): PairingResult[] {
+    return this.pairAlternatives(entries, options)[0]
+  }
+
+  pairAlternatives(entries: PairingInput[], options: PairingOptions): PairingResult[][] {
     if (entries.length % 2 !== 0) {
       throw new Error('Rating difference minimizer requires an even number of entries')
     }
-    if (entries.length === 0) return []
+    if (entries.length === 0) return [[]]
 
     const history = options.history ?? []
     const previouslyPaired = new Set(
@@ -89,13 +93,13 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
       throw new Error('No legal pairing sheet found for this round')
     }
 
-    const bestSheet = topSheets[0].sheet
-
-    const orderedPairs = [...bestSheet].sort(
-      (a, b) => Math.max(ratingOf(b[0]), ratingOf(b[1])) - Math.max(ratingOf(a[0]), ratingOf(a[1])),
-    )
-
-    return orderedPairs.map((pair, index) => this.assignColors(pair, options, history, index + 1))
+    return topSheets.map(({sheet}) => {
+      const orderedPairs = [...sheet].sort(
+        (a, b) =>
+          Math.max(ratingOf(b[0]), ratingOf(b[1])) - Math.max(ratingOf(a[0]), ratingOf(a[1])),
+      )
+      return orderedPairs.map((pair, index) => this.assignColors(pair, options, history, index + 1))
+    })
   }
 
   private assignColors(

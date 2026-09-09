@@ -28,4 +28,9 @@ export interface PairingOptions {
 
 export interface PairingEngine {
   pair(entries: PairingInput[], options: PairingOptions): PairingResult[]
+
+  // Optional: the best sheet plus the next-best alternatives (index 0 is
+  // the same sheet `pair` returns), for engines that can rank more than one
+  // legal pairing sheet.
+  pairAlternatives?(entries: PairingInput[], options: PairingOptions): PairingResult[][]
 }

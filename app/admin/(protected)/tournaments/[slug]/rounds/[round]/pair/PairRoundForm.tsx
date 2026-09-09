@@ -22,7 +22,10 @@ export function PairRoundForm({
   const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer'>('ratingDiffMinimizer')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
-  const [preview, setPreview] = useState<PairingListItem[] | null>(null)
+  const [preview, setPreview] = useState<{
+    best: PairingListItem[]
+    alternatives: PairingListItem[][]
+  } | null>(null)
   const router = useRouter()
 
   function submit(repair: boolean) {
@@ -47,7 +50,7 @@ export function PairRoundForm({
     startTransition(async () => {
       try {
         const result = await pairRound(slug, round, {higherSeedColor, engine, dryRun: true})
-        setPreview(result ?? [])
+        setPreview(result ?? {best: [], alternatives: []})
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }
@@ -149,7 +152,16 @@ export function PairRoundForm({
       {preview && (
         <div className="mt-6">
           <h3 className="mb-2 font-semibold">Dry run preview (not saved)</h3>
-          <PairingList pairings={preview} />
+          <PairingList pairings={preview.best} />
+
+          {preview.alternatives.map((sheet, i) => (
+            <div key={i} className="mt-6">
+              <h4 className="mb-2 font-semibold">
+                {i === 0 ? '2nd' : i === 1 ? '3rd' : `${i + 2}th`} best pairing sheet
+              </h4>
+              <PairingList pairings={sheet} />
+            </div>
+          ))}
         </div>
       )}
     </div>
