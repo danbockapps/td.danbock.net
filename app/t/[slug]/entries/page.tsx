@@ -22,7 +22,12 @@ export default async function AllEntriesPage({params}: {params: Promise<{slug: s
       <h1 className="mb-6 text-2xl font-bold">{tournament.name} — Entries</h1>
       <EntryList
         showRound
-        entries={allEntries.map((e) => ({round: e.round, name: e.name, rating: e.rating}))}
+        entries={allEntries.map((e) => ({
+          round: e.round,
+          name: e.name,
+          uscfId: e.uscfId,
+          rating: e.rating,
+        }))}
       />
     </div>
   )

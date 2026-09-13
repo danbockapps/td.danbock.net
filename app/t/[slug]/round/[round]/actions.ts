@@ -18,7 +18,7 @@ export async function getRoundEntries(slug: string, round: number) {
   const roundEntries = await db.query.entries.findMany({
     where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
   })
-  return {data: roundEntries.map((e) => ({name: e.name, rating: e.rating}))}
+  return {data: roundEntries.map((e) => ({name: e.name, uscfId: e.uscfId, rating: e.rating}))}
 }
 
 export async function getRoundPairings(slug: string, round: number) {

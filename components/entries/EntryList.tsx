@@ -4,6 +4,7 @@ import styles from './EntryList.module.css'
 export interface EntryListItem {
   round?: number
   name: string
+  uscfId: string
   rating: number | null
 }
 
@@ -30,6 +31,7 @@ function EntryTable({
           <th>Seed</th>
           {showRound && <th>Round</th>}
           <th>Name</th>
+          <th>USCF ID</th>
           <th>Rating</th>
         </tr>
       </thead>
@@ -42,6 +44,7 @@ function EntryTable({
             <td>{i + 1}</td>
             {showRound && <td>{e.round}</td>}
             <td>{e.name}</td>
+            <td>{e.uscfId}</td>
             <td>{formatRating(e.rating)}</td>
           </tr>
         ))}
