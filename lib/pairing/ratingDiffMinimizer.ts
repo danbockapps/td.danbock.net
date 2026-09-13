@@ -69,23 +69,39 @@ export class RatingDiffMinimizerEngine implements PairingEngine {
     const scoreOf = (sheet: Pair[]): number =>
       sheet.reduce((sum, [a, b]) => sum + (ratingOf(a) - ratingOf(b)) ** 2, 0)
 
+    // A canonical string for a sheet, independent of generation order, used
+    // to break score ties deterministically instead of by whichever sheet
+    // happened to be generated first.
+    const tieBreakKeyOf = (sheet: Pair[]): string =>
+      sheet
+        .map((pair) => pairKey(pair[0].uscfId, pair[1].uscfId))
+        .sort()
+        .join(',')
+
+    // Ascending by score, with ties broken by tieBreakKey so the ranking
+    // (and thus the chosen sheet) is stable for a given input.
+    const compareSheets = (
+      a: {score: number; tieBreakKey: string},
+      b: {score: number; tieBreakKey: string},
+    ): number => a.score - b.score || (a.tieBreakKey < b.tieBreakKey ? -1 : 1)
+
     // Keep only the best TOP_SHEETS_TO_KEEP legal sheets seen so far, sorted
     // ascending by score, instead of materializing every legal sheet.
-    const topSheets: {sheet: Pair[]; score: number}[] = []
+    const topSheets: {sheet: Pair[]; score: number; tieBreakKey: string}[] = []
 
     for (const sheet of generatePairingSheets(entries)) {
       if (!isLegal(sheet)) continue
 
-      const score = scoreOf(sheet)
+      const candidate = {sheet, score: scoreOf(sheet), tieBreakKey: tieBreakKeyOf(sheet)}
       if (
         topSheets.length === TOP_SHEETS_TO_KEEP &&
-        score >= topSheets[topSheets.length - 1].score
+        compareSheets(candidate, topSheets[topSheets.length - 1]) >= 0
       ) {
         continue
       }
 
-      const insertAt = topSheets.findIndex((entry) => score < entry.score)
-      topSheets.splice(insertAt === -1 ? topSheets.length : insertAt, 0, {sheet, score})
+      const insertAt = topSheets.findIndex((entry) => compareSheets(candidate, entry) < 0)
+      topSheets.splice(insertAt === -1 ? topSheets.length : insertAt, 0, candidate)
       if (topSheets.length > TOP_SHEETS_TO_KEEP) topSheets.pop()
     }
 

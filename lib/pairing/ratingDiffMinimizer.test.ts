@@ -202,6 +202,30 @@ describe('RatingDiffMinimizerEngine', () => {
     expect(results).toHaveLength(3)
   })
 
+  it('breaks a tie between equally-scoring sheets deterministically', () => {
+    // A=1000, B=1004, C=1000, D=1004.
+    // A-C,B-D: 0^2 + 0^2 = 0 (uniquely lowest)
+    // A-B,C-D: 4^2 + 4^2 = 32
+    // A-D,B-C: 4^2 + 4^2 = 32 (tied with A-B,C-D for second place)
+    const a = entry(1, 1000)
+    const b = entry(2, 1004)
+    const c = entry(3, 1000)
+    const d = entry(4, 1004)
+
+    const alternatives = engine.pairAlternatives([a, b, c, d], {higherSeedColor: 'white'})
+
+    expect(boards(alternatives[0])).toEqual(
+      expect.arrayContaining([new Set([1, 3]), new Set([2, 4])]),
+    )
+    expect(boards(alternatives[1])).toEqual(
+      expect.arrayContaining([new Set([1, 2]), new Set([3, 4])]),
+    )
+
+    // Running again with the same input must pick the same tied sheet.
+    const again = engine.pairAlternatives([a, b, c, d], {higherSeedColor: 'white'})
+    expect(boards(again[1])).toEqual(boards(alternatives[1]))
+  })
+
   it('falls back to higherSeedColor for the higher-rated player when neither has a preference', () => {
     const a = entry(1, 2000)
     const b = entry(2, 1000)
