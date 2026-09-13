@@ -6,6 +6,8 @@ import {broadcastEntriesChanged} from '@/lib/sse'
 import {getUscfLookup} from '@/lib/uscf'
 import {and, eq} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
+import {USCF_ID_COOKIE} from '@/lib/uscf-cookie'
+import {cookies} from 'next/headers'
 
 export async function getRoundEntries(slug: string, round: number) {
   const tournament = await db.query.tournaments.findFirst({
@@ -89,5 +91,14 @@ export async function confirmRegistration(
 
   broadcastEntriesChanged(slug, round)
   revalidatePath(`/t/${slug}`)
+  ;(await cookies()).set(USCF_ID_COOKIE, uscfId, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+  })
   return {success: true}
+}
+
+export async function forgetSavedUscfId() {
+  ;(await cookies()).delete(USCF_ID_COOKIE)
 }
