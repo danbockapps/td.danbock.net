@@ -65,7 +65,7 @@ export function EntryList({
 
   if (!showRound) {
     return (
-      <div className="overflow-x-auto">
+      <div>
         <EntryTable
           entries={[...entries].sort(byRatingDesc)}
           showRound={false}
@@ -82,7 +82,7 @@ export function EntryList({
   return (
     <div className="flex flex-col gap-8">
       {rounds.map((round) => (
-        <div key={round} className="overflow-x-auto">
+        <div key={round}>
           <h3 className="mb-2 font-semibold">Round {round}</h3>
           <EntryTable
             entries={entries.filter((e) => e.round === round).sort(byRatingDesc)}
