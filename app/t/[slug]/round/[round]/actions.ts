@@ -1,8 +1,8 @@
 'use server'
 
 import {db} from '@/db'
-import {entries, pairings, results, tournaments} from '@/db/schema'
-import {RESULT_OUTCOMES, type ResultOutcome} from '@/lib/results'
+import {entries, pairings, tournaments} from '@/db/schema'
+import {RESULT_OUTCOMES, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {getUscfLookup} from '@/lib/uscf'
 import {and, eq, or} from 'drizzle-orm'
@@ -186,16 +186,7 @@ export async function submitPublicResult(
   })
   if (!pairing) return {error: 'This pairing is not yours'}
 
-  const existing = await db.query.results.findFirst({
-    where: eq(results.pairingId, pairingId),
-  })
-
-  const outcomeValue = outcome as ResultOutcome
-  if (existing) {
-    await db.update(results).set({outcome: outcomeValue}).where(eq(results.pairingId, pairingId))
-  } else {
-    await db.insert(results).values({pairingId, outcome: outcomeValue})
-  }
+  await upsertResult(pairingId, outcome as ResultOutcome)
 
   broadcastResultsChanged(slug, round)
   revalidatePath(`/t/${slug}/round/${round}/info`)

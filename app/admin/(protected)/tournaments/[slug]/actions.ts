@@ -3,6 +3,7 @@
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
+import {upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
@@ -205,21 +206,7 @@ export async function submitResult(pairingId: number, outcome: string) {
   if (!outcome) {
     await db.delete(results).where(eq(results.pairingId, pairingId))
   } else {
-    const existing = await db.query.results.findFirst({
-      where: eq(results.pairingId, pairingId),
-    })
-
-    if (existing) {
-      await db
-        .update(results)
-        .set({outcome: outcome as (typeof results.$inferInsert)['outcome']})
-        .where(eq(results.pairingId, pairingId))
-    } else {
-      await db.insert(results).values({
-        pairingId,
-        outcome: outcome as (typeof results.$inferInsert)['outcome'],
-      })
-    }
+    await upsertResult(pairingId, outcome as ResultOutcome)
   }
 
   if (pairing) broadcastResultsChanged(pairing.tournament.slug, pairing.round)
