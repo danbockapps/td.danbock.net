@@ -1,16 +1,8 @@
 'use client'
 
 import {submitResult} from '@/app/admin/(protected)/tournaments/[slug]/actions'
+import {RESULT_OUTCOMES, RESULT_OUTCOME_LABELS} from '@/lib/results'
 import {useState, useTransition} from 'react'
-
-const OUTCOMES = [
-  {value: 'white', label: '1-0'},
-  {value: 'black', label: '0-1'},
-  {value: 'draw', label: '½-½'},
-  {value: 'white_forfeit', label: '0-1 (forfeit)'},
-  {value: 'black_forfeit', label: '1-0 (forfeit)'},
-  {value: 'double_forfeit', label: '0-0 (double forfeit)'},
-]
 
 export function ResultRow({
   pairingId,
@@ -47,12 +39,10 @@ export function ResultRow({
           disabled={pending}
           onChange={(e) => submit(e.target.value)}
         >
-          <option value="" disabled>
-            Select result
-          </option>
-          {OUTCOMES.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
+          <option value="">No result</option>
+          {RESULT_OUTCOMES.map((o) => (
+            <option key={o} value={o}>
+              {RESULT_OUTCOME_LABELS[o]}
             </option>
           ))}
         </select>

@@ -36,6 +36,7 @@ export default async function InfoPage({params}: {params: Promise<{slug: string;
       ? getDevHost(headerList.get('host') ?? 'localhost')
       : headerList.get('host')
   const registerUrl = `${proto}://${host}/t/${slug}/round/${round}/register`
+  const resultsUrl = `${proto}://${host}/t/${slug}/round/${round}/results`
 
   return (
     <div className="min-h-screen p-8">
@@ -48,6 +49,7 @@ export default async function InfoPage({params}: {params: Promise<{slug: string;
         initialEntries={entriesResult.data ?? []}
         initialPairings={pairingsResult.data ?? []}
         registerUrl={registerUrl}
+        resultsUrl={resultsUrl}
       />
     </div>
   )

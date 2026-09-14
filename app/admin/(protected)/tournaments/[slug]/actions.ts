@@ -3,7 +3,7 @@
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
-import {broadcastEntriesChanged} from '@/lib/sse'
+import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
@@ -197,21 +197,32 @@ export async function unpairRound(slug: string, round: number) {
 }
 
 export async function submitResult(pairingId: number, outcome: string) {
-  const existing = await db.query.results.findFirst({
-    where: eq(results.pairingId, pairingId),
+  const pairing = await db.query.pairings.findFirst({
+    where: eq(pairings.id, pairingId),
+    with: {tournament: true},
   })
 
-  if (existing) {
-    await db
-      .update(results)
-      .set({outcome: outcome as (typeof results.$inferInsert)['outcome']})
-      .where(eq(results.pairingId, pairingId))
+  if (!outcome) {
+    await db.delete(results).where(eq(results.pairingId, pairingId))
   } else {
-    await db.insert(results).values({
-      pairingId,
-      outcome: outcome as (typeof results.$inferInsert)['outcome'],
+    const existing = await db.query.results.findFirst({
+      where: eq(results.pairingId, pairingId),
     })
+
+    if (existing) {
+      await db
+        .update(results)
+        .set({outcome: outcome as (typeof results.$inferInsert)['outcome']})
+        .where(eq(results.pairingId, pairingId))
+    } else {
+      await db.insert(results).values({
+        pairingId,
+        outcome: outcome as (typeof results.$inferInsert)['outcome'],
+      })
+    }
   }
+
+  if (pairing) broadcastResultsChanged(pairing.tournament.slug, pairing.round)
 
   revalidatePath('/admin/tournaments')
   revalidatePath('/t')

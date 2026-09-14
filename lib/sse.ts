@@ -33,9 +33,17 @@ export function subscribe(
 }
 
 export function broadcastEntriesChanged(slug: string, round: number): void {
+  broadcast(slug, round, 'entries-changed')
+}
+
+export function broadcastResultsChanged(slug: string, round: number): void {
+  broadcast(slug, round, 'results-changed')
+}
+
+function broadcast(slug: string, round: number, event: string): void {
   const set = channels.get(key(slug, round))
   if (!set) return
-  const payload = new TextEncoder().encode(`event: entries-changed\ndata: {}\n\n`)
+  const payload = new TextEncoder().encode(`event: ${event}\ndata: {}\n\n`)
   for (const controller of set) {
     try {
       controller.enqueue(payload)

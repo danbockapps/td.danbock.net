@@ -4,6 +4,7 @@ import {getRoundEntries, getRoundPairings} from '@/app/t/[slug]/round/[round]/ac
 import {EntryList, type EntryListItem} from '@/components/entries/EntryList'
 import {PairingList, type PairingListItem} from '@/components/pairings/PairingList'
 import {RegistrationQr} from '@/components/RegistrationQr'
+import {ResultsQr} from '@/components/ResultsQr'
 import {useEffect, useRef, useState} from 'react'
 
 export function InfoScreen({
@@ -12,12 +13,14 @@ export function InfoScreen({
   initialEntries,
   initialPairings,
   registerUrl,
+  resultsUrl,
 }: {
   slug: string
   round: number
   initialEntries: EntryListItem[]
   initialPairings: PairingListItem[]
   registerUrl: string
+  resultsUrl: string
 }) {
   const [entries, setEntries] = useState(initialEntries)
   const [pairings, setPairings] = useState(initialPairings)
@@ -41,13 +44,24 @@ export function InfoScreen({
         setNewNames(added)
       })
     })
+    source.addEventListener('results-changed', () => {
+      getRoundPairings(slug, round).then((result) => {
+        if (result.data) setPairings(result.data)
+      })
+    })
     return () => source.close()
   }, [slug, round])
 
   if (pairings.length > 0) {
     return (
-      <div className="mx-auto w-fit max-w-full">
-        <PairingList pairings={pairings} />
+      <div className="flex flex-wrap items-start justify-center gap-8">
+        <div className="w-fit max-w-full">
+          <PairingList pairings={pairings} />
+        </div>
+        <div className="flex flex-col items-center">
+          <h2 className="mb-4 text-xl font-semibold">Report your result</h2>
+          <ResultsQr url={resultsUrl} />
+        </div>
       </div>
     )
   }
