@@ -1,10 +1,24 @@
 'use client'
 
 import {confirmRegistration, lookupUscf} from '@/app/t/[slug]/round/[round]/actions'
+import {LoadingCard, UscfIdEntryCard} from '@/app/t/[slug]/round/[round]/UscfIdCard'
 import {formatRating} from '@/lib/format'
 import {useEffect, useState, useTransition} from 'react'
 
 type Step = 'loading-saved' | 'welcome-back' | 'enter-id' | 'confirm' | 'done'
+
+function PlayerPreview({preview}: {preview: {name: string; rating: number | null}}) {
+  return (
+    <>
+      <p className="mb-1">
+        <span className="font-semibold">Name:</span> {preview.name}
+      </p>
+      <p className="mb-4">
+        <span className="font-semibold">Rating:</span> {formatRating(preview.rating)}
+      </p>
+    </>
+  )
+}
 
 export function RegisterForm({
   slug,
@@ -73,11 +87,7 @@ export function RegisterForm({
   }
 
   if (step === 'loading-saved') {
-    return (
-      <div className="card bg-base-200 p-6 shadow">
-        <p className="text-base-content/60">Loading…</p>
-      </div>
-    )
+    return <LoadingCard />
   }
 
   if (step === 'done') {
@@ -91,12 +101,7 @@ export function RegisterForm({
   if (step === 'welcome-back' && preview) {
     return (
       <div className="card bg-base-200 p-6 shadow">
-        <p className="mb-1">
-          <span className="font-semibold">Name:</span> {preview.name}
-        </p>
-        <p className="mb-4">
-          <span className="font-semibold">Rating:</span> {formatRating(preview.rating)}
-        </p>
+        <PlayerPreview preview={preview} />
         <p className="mb-4 text-sm text-base-content/60">Register this player again?</p>
         {error && <p className="mb-4 text-sm text-error">{error}</p>}
         <div className="flex gap-2">
@@ -119,12 +124,7 @@ export function RegisterForm({
   if (step === 'confirm' && preview) {
     return (
       <div className="card bg-base-200 p-6 shadow">
-        <p className="mb-1">
-          <span className="font-semibold">Name:</span> {preview.name}
-        </p>
-        <p className="mb-4">
-          <span className="font-semibold">Rating:</span> {formatRating(preview.rating)}
-        </p>
+        <PlayerPreview preview={preview} />
         {error && <p className="mb-4 text-sm text-error">{error}</p>}
         <div className="flex gap-2">
           <button className="btn btn-primary" onClick={confirm} disabled={pending}>
@@ -146,28 +146,14 @@ export function RegisterForm({
   }
 
   return (
-    <div className="card bg-base-200 p-6 shadow">
-      <label className="fieldset-label mb-1" htmlFor="uscfId">
-        USCF ID (8 digits)
-      </label>
-      <input
-        id="uscfId"
-        className="input mb-4 w-full"
-        inputMode="numeric"
-        pattern="\d{8}"
-        maxLength={8}
-        value={uscfId}
-        onChange={(e) => setUscfId(e.target.value.replace(/\D/g, ''))}
-        autoFocus
-      />
-      {error && <p className="mb-4 text-sm text-error">{error}</p>}
-      <button
-        className="btn btn-primary"
-        onClick={submitId}
-        disabled={pending || uscfId.length === 0}
-      >
-        {pending ? 'Looking up…' : 'Look up'}
-      </button>
-    </div>
+    <UscfIdEntryCard
+      uscfId={uscfId}
+      setUscfId={setUscfId}
+      error={error}
+      pending={pending}
+      onSubmit={submitId}
+      submitLabel="Look up"
+      pendingLabel="Looking up…"
+    />
   )
 }

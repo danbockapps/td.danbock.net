@@ -1,4 +1,4 @@
-import type {Member, UscfLookup, UscfLookupResult} from './types'
+import {memberToLookupResult, type Member, type UscfLookup, type UscfLookupResult} from './types'
 
 const API_BASE = 'https://ratings-api.uschess.org/api/v2'
 
@@ -22,9 +22,6 @@ export class OfficialUscfLookup implements UscfLookup {
     }
 
     const member: Member = await response.json()
-    const name = `${member.firstName} ${member.lastName}`
-    const rating = member.ratings.find((r) => r.ratingSystem === 'R')?.rating ?? null
-
-    return {name, rating}
+    return memberToLookupResult(member)
   }
 }

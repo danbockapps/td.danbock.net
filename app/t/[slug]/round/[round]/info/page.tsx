@@ -1,9 +1,8 @@
 import {getRoundEntries, getRoundPairings} from '@/app/t/[slug]/round/[round]/actions'
 import {InfoScreen} from '@/components/info/InfoScreen'
-import {db} from '@/db'
+import {getTournamentForRoundOrNotFound} from '@/lib/tournament'
 import {networkInterfaces} from 'os'
 import {headers} from 'next/headers'
-import {notFound} from 'next/navigation'
 
 function getDevHost(fallback: string) {
   const [, port] = fallback.split(':')
@@ -19,10 +18,7 @@ export default async function InfoPage({params}: {params: Promise<{slug: string;
   const {slug, round: roundParam} = await params
   const round = Number(roundParam)
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament || round < 1 || round > tournament.numRounds) notFound()
+  const tournament = await getTournamentForRoundOrNotFound(slug, round)
 
   const [entriesResult, pairingsResult] = await Promise.all([
     getRoundEntries(slug, round),

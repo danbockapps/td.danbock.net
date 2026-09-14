@@ -2,7 +2,7 @@
 
 import {QRCodeSVG} from 'qrcode.react'
 
-export function RegistrationQr({url}: {url: string}) {
+export function UrlQr({url}: {url: string}) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="rounded-box bg-white p-4">

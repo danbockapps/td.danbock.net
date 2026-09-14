@@ -1,7 +1,6 @@
-import {db} from '@/db'
+import {getTournamentForRoundOrNotFound} from '@/lib/tournament'
 import {USCF_ID_COOKIE} from '@/lib/uscf-cookie'
 import {cookies} from 'next/headers'
-import {notFound} from 'next/navigation'
 import {RegisterForm} from './RegisterForm'
 
 export default async function RegisterPage({
@@ -12,10 +11,7 @@ export default async function RegisterPage({
   const {slug, round: roundParam} = await params
   const round = Number(roundParam)
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament || round < 1 || round > tournament.numRounds) notFound()
+  const tournament = await getTournamentForRoundOrNotFound(slug, round)
 
   const savedUscfId = (await cookies()).get(USCF_ID_COOKIE)?.value ?? null
 

@@ -1,16 +1,13 @@
 import {EntryList} from '@/components/entries/EntryList'
 import {db} from '@/db'
 import {entries} from '@/db/schema'
+import {getTournamentOrNotFound} from '@/lib/tournament'
 import {eq} from 'drizzle-orm'
-import {notFound} from 'next/navigation'
 
 export default async function AllEntriesPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament) notFound()
+  const tournament = await getTournamentOrNotFound(slug)
 
   const allEntries = await db.query.entries.findMany({
     where: eq(entries.tournamentId, tournament.id),

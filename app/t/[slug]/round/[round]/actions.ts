@@ -10,10 +10,39 @@ import {revalidatePath} from 'next/cache'
 import {USCF_ID_COOKIE} from '@/lib/uscf-cookie'
 import {cookies} from 'next/headers'
 
-export async function getRoundEntries(slug: string, round: number) {
-  const tournament = await db.query.tournaments.findFirst({
+async function findTournamentBySlug(slug: string) {
+  return db.query.tournaments.findFirst({
     where: eq(tournaments.slug, slug),
   })
+}
+
+async function findTournamentForRound(slug: string, round: number) {
+  const tournament = await findTournamentBySlug(slug)
+  if (!tournament) return {ok: false as const, error: 'Tournament not found'}
+  if (round < 1 || round > tournament.numRounds) return {ok: false as const, error: 'Invalid round'}
+  return {ok: true as const, tournament}
+}
+
+async function findEntryForRound(tournamentId: number, round: number, uscfId: string) {
+  return db.query.entries.findFirst({
+    where: and(
+      eq(entries.tournamentId, tournamentId),
+      eq(entries.round, round),
+      eq(entries.uscfId, uscfId),
+    ),
+  })
+}
+
+async function rememberUscfId(uscfId: string) {
+  ;(await cookies()).set(USCF_ID_COOKIE, uscfId, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+  })
+}
+
+export async function getRoundEntries(slug: string, round: number) {
+  const tournament = await findTournamentBySlug(slug)
   if (!tournament) return {error: 'Tournament not found'}
 
   const roundEntries = await db.query.entries.findMany({
@@ -23,9 +52,7 @@ export async function getRoundEntries(slug: string, round: number) {
 }
 
 export async function getRoundPairings(slug: string, round: number) {
-  const tournament = await db.query.tournaments.findFirst({
-    where: eq(tournaments.slug, slug),
-  })
+  const tournament = await findTournamentBySlug(slug)
   if (!tournament) return {error: 'Tournament not found'}
 
   const roundPairings = await db.query.pairings.findMany({
@@ -44,9 +71,7 @@ export async function getRoundPairings(slug: string, round: number) {
 }
 
 export async function lookupUscf(slug: string, uscfId: string) {
-  const tournament = await db.query.tournaments.findFirst({
-    where: eq(tournaments.slug, slug),
-  })
+  const tournament = await findTournamentBySlug(slug)
   if (!tournament) return {error: 'Tournament not found'}
 
   const priorEntry = await db.query.entries.findFirst({
@@ -67,19 +92,11 @@ export async function confirmRegistration(
   name: string,
   rating: number | null,
 ) {
-  const tournament = await db.query.tournaments.findFirst({
-    where: eq(tournaments.slug, slug),
-  })
-  if (!tournament) return {error: 'Tournament not found'}
-  if (round < 1 || round > tournament.numRounds) return {error: 'Invalid round'}
+  const result = await findTournamentForRound(slug, round)
+  if (!result.ok) return {error: result.error}
+  const {tournament} = result
 
-  const existing = await db.query.entries.findFirst({
-    where: and(
-      eq(entries.tournamentId, tournament.id),
-      eq(entries.round, round),
-      eq(entries.uscfId, uscfId),
-    ),
-  })
+  const existing = await findEntryForRound(tournament.id, round, uscfId)
   if (existing) return {error: 'This USCF ID is already registered for this round'}
 
   await db.insert(entries).values({
@@ -92,11 +109,7 @@ export async function confirmRegistration(
 
   broadcastEntriesChanged(slug, round)
   revalidatePath(`/t/${slug}`)
-  ;(await cookies()).set(USCF_ID_COOKIE, uscfId, {
-    path: '/',
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: 'lax',
-  })
+  await rememberUscfId(uscfId)
   return {success: true}
 }
 
@@ -105,19 +118,11 @@ export async function forgetSavedUscfId() {
 }
 
 export async function getMyPairing(slug: string, round: number, uscfId: string) {
-  const tournament = await db.query.tournaments.findFirst({
-    where: eq(tournaments.slug, slug),
-  })
-  if (!tournament) return {error: 'Tournament not found'}
-  if (round < 1 || round > tournament.numRounds) return {error: 'Invalid round'}
+  const result = await findTournamentForRound(slug, round)
+  if (!result.ok) return {error: result.error}
+  const {tournament} = result
 
-  const entry = await db.query.entries.findFirst({
-    where: and(
-      eq(entries.tournamentId, tournament.id),
-      eq(entries.round, round),
-      eq(entries.uscfId, uscfId),
-    ),
-  })
+  const entry = await findEntryForRound(tournament.id, round, uscfId)
   if (!entry) return {data: null}
 
   const pairing = await db.query.pairings.findFirst({
@@ -132,11 +137,7 @@ export async function getMyPairing(slug: string, round: number, uscfId: string) 
 
   const myColor: 'white' | 'black' = pairing.whiteEntryId === entry.id ? 'white' : 'black'
 
-  ;(await cookies()).set(USCF_ID_COOKIE, uscfId, {
-    path: '/',
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: 'lax',
-  })
+  await rememberUscfId(uscfId)
 
   return {
     data: {
@@ -161,19 +162,11 @@ export async function submitPublicResult(
     return {error: 'Invalid outcome'}
   }
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: eq(tournaments.slug, slug),
-  })
-  if (!tournament) return {error: 'Tournament not found'}
-  if (round < 1 || round > tournament.numRounds) return {error: 'Invalid round'}
+  const result = await findTournamentForRound(slug, round)
+  if (!result.ok) return {error: result.error}
+  const {tournament} = result
 
-  const entry = await db.query.entries.findFirst({
-    where: and(
-      eq(entries.tournamentId, tournament.id),
-      eq(entries.round, round),
-      eq(entries.uscfId, uscfId),
-    ),
-  })
+  const entry = await findEntryForRound(tournament.id, round, uscfId)
   if (!entry) return {error: 'No matching entry found'}
 
   const pairing = await db.query.pairings.findFirst({

@@ -81,6 +81,45 @@ type EntryEditProps = {
   initialTeam: string | null
 }
 
+function RoundRemoveControl({
+  rounds,
+  deleteRound,
+  setDeleteRound,
+  deletePending,
+  removeFromRound,
+  selectClassName,
+  buttonClassName,
+  buttonLabel,
+}: {
+  rounds: number[]
+  deleteRound: number
+  setDeleteRound: (round: number) => void
+  deletePending: boolean
+  removeFromRound: () => void
+  selectClassName: string
+  buttonClassName: string
+  buttonLabel: string
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        className={selectClassName}
+        value={deleteRound}
+        onChange={(e) => setDeleteRound(Number(e.target.value))}
+      >
+        {rounds.map((r) => (
+          <option key={r} value={r}>
+            Round {r}
+          </option>
+        ))}
+      </select>
+      <button className={buttonClassName} onClick={removeFromRound} disabled={deletePending}>
+        {deletePending ? 'Removing…' : buttonLabel}
+      </button>
+    </div>
+  )
+}
+
 export function EntryEditRow(props: EntryEditProps) {
   const {rounds} = props
   const {
@@ -132,26 +171,16 @@ export function EntryEditRow(props: EntryEditProps) {
         </button>
       </td>
       <td>
-        <div className="flex items-center gap-2">
-          <select
-            className="select select-xs"
-            value={deleteRound}
-            onChange={(e) => setDeleteRound(Number(e.target.value))}
-          >
-            {rounds.map((r) => (
-              <option key={r} value={r}>
-                Round {r}
-              </option>
-            ))}
-          </select>
-          <button
-            className="btn btn-xs btn-error"
-            onClick={removeFromRound}
-            disabled={deletePending}
-          >
-            {deletePending ? 'Removing…' : 'Remove'}
-          </button>
-        </div>
+        <RoundRemoveControl
+          rounds={rounds}
+          deleteRound={deleteRound}
+          setDeleteRound={setDeleteRound}
+          deletePending={deletePending}
+          removeFromRound={removeFromRound}
+          selectClassName="select select-xs"
+          buttonClassName="btn btn-xs btn-error"
+          buttonLabel="Remove"
+        />
         {deleteError && <div className="mt-1 text-xs text-error">{deleteError}</div>}
       </td>
     </tr>
@@ -217,26 +246,16 @@ export function EntryEditCard(props: EntryEditProps) {
 
         <div className="divider my-0"></div>
 
-        <div className="flex items-center gap-2">
-          <select
-            className="select select-sm grow"
-            value={deleteRound}
-            onChange={(e) => setDeleteRound(Number(e.target.value))}
-          >
-            {rounds.map((r) => (
-              <option key={r} value={r}>
-                Round {r}
-              </option>
-            ))}
-          </select>
-          <button
-            className="btn btn-sm btn-error"
-            onClick={removeFromRound}
-            disabled={deletePending}
-          >
-            {deletePending ? 'Removing…' : 'Remove from round'}
-          </button>
-        </div>
+        <RoundRemoveControl
+          rounds={rounds}
+          deleteRound={deleteRound}
+          setDeleteRound={setDeleteRound}
+          deletePending={deletePending}
+          removeFromRound={removeFromRound}
+          selectClassName="select select-sm grow"
+          buttonClassName="btn btn-sm btn-error"
+          buttonLabel="Remove from round"
+        />
         {deleteError && <div className="text-xs text-error">{deleteError}</div>}
       </div>
     </div>

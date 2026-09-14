@@ -1,16 +1,13 @@
 import {db} from '@/db'
 import {entries} from '@/db/schema'
+import {getTournamentOrNotFound} from '@/lib/tournament'
 import {eq} from 'drizzle-orm'
-import {notFound} from 'next/navigation'
 import {EntryEditCard, EntryEditRow} from './EntryEditRow'
 
 export default async function EditEntriesPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament) notFound()
+  const tournament = await getTournamentOrNotFound(slug)
 
   const allEntries = await db.query.entries.findMany({
     where: eq(entries.tournamentId, tournament.id),
@@ -19,7 +16,13 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
 
   const players = new Map<
     string,
-    {uscfId: string; name: string; rating: number | null; team: string | null; rounds: number[]}
+    {
+      uscfId: string
+      initialName: string
+      initialRating: number | null
+      initialTeam: string | null
+      rounds: number[]
+    }
   >()
   for (const e of allEntries) {
     const existing = players.get(e.uscfId)
@@ -28,14 +31,16 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
     } else {
       players.set(e.uscfId, {
         uscfId: e.uscfId,
-        name: e.name,
-        rating: e.rating,
-        team: e.team,
+        initialName: e.name,
+        initialRating: e.rating,
+        initialTeam: e.team,
         rounds: [e.round],
       })
     }
   }
-  const allPlayers = [...players.values()].sort((a, b) => a.name.localeCompare(b.name))
+  const allPlayers = [...players.values()].sort((a, b) =>
+    a.initialName.localeCompare(b.initialName),
+  )
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -59,30 +64,14 @@ export default async function EditEntriesPage({params}: {params: Promise<{slug: 
               </thead>
               <tbody>
                 {allPlayers.map((p) => (
-                  <EntryEditRow
-                    key={p.uscfId}
-                    tournamentId={tournament.id}
-                    uscfId={p.uscfId}
-                    rounds={p.rounds}
-                    initialName={p.name}
-                    initialRating={p.rating}
-                    initialTeam={p.team}
-                  />
+                  <EntryEditRow key={p.uscfId} tournamentId={tournament.id} {...p} />
                 ))}
               </tbody>
             </table>
           </div>
           <div className="flex flex-col gap-3 md:hidden">
             {allPlayers.map((p) => (
-              <EntryEditCard
-                key={p.uscfId}
-                tournamentId={tournament.id}
-                uscfId={p.uscfId}
-                rounds={p.rounds}
-                initialName={p.name}
-                initialRating={p.rating}
-                initialTeam={p.team}
-              />
+              <EntryEditCard key={p.uscfId} tournamentId={tournament.id} {...p} />
             ))}
           </div>
         </>

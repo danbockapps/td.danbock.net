@@ -3,8 +3,7 @@
 import {getRoundEntries, getRoundPairings} from '@/app/t/[slug]/round/[round]/actions'
 import {EntryList, type EntryListItem} from '@/components/entries/EntryList'
 import {PairingList, type PairingListItem} from '@/components/pairings/PairingList'
-import {RegistrationQr} from '@/components/RegistrationQr'
-import {ResultsQr} from '@/components/ResultsQr'
+import {UrlQr} from '@/components/UrlQr'
 import {useEffect, useRef, useState} from 'react'
 
 export function InfoScreen({
@@ -60,7 +59,7 @@ export function InfoScreen({
         </div>
         <div className="flex flex-col items-center">
           <h2 className="mb-4 text-xl font-semibold">Report your result</h2>
-          <ResultsQr url={resultsUrl} />
+          <UrlQr url={resultsUrl} />
         </div>
       </div>
     )
@@ -74,7 +73,7 @@ export function InfoScreen({
       </div>
       <div className="flex flex-col items-center">
         <h2 className="mb-4 text-xl font-semibold">Please sign in</h2>
-        <RegistrationQr url={registerUrl} />
+        <UrlQr url={registerUrl} />
       </div>
     </div>
   )
