@@ -1,4 +1,4 @@
-import {RESULT_OUTCOME_LABELS, type ResultOutcome} from '@/lib/results'
+import {RESULT_OUTCOME_LABELS, type ResultOutcome} from '@/lib/result-outcomes'
 
 export function formatRating(rating: number | null): string {
   return rating === null ? 'Unrated' : String(rating)
