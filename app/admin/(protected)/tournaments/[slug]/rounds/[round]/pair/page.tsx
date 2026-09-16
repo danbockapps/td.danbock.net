@@ -1,8 +1,8 @@
 import {db} from '@/db'
 import {pairings} from '@/db/schema'
 import {PairingList} from '@/components/pairings/PairingList'
+import {getTournamentOrNotFound} from '@/lib/tournament'
 import {and, eq} from 'drizzle-orm'
-import {notFound} from 'next/navigation'
 import {PairRoundForm} from './PairRoundForm'
 
 export default async function PairRoundPage({
@@ -13,10 +13,7 @@ export default async function PairRoundPage({
   const {slug, round: roundParam} = await params
   const round = Number(roundParam)
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament) notFound()
+  const tournament = await getTournamentOrNotFound(slug)
 
   const existingPairings = await db.query.pairings.findMany({
     where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),

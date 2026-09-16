@@ -16,3 +16,9 @@ export interface Member {
     ratingSystem: 'R' | 'Q' | 'B' | 'OR' | 'OQ' | 'OB'
   }[]
 }
+
+export function memberToLookupResult(member: Member): UscfLookupResult {
+  const name = `${member.firstName} ${member.lastName}`
+  const rating = member.ratings.find((r) => r.ratingSystem === 'R')?.rating ?? null
+  return {name, rating}
+}

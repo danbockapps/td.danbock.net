@@ -1,16 +1,13 @@
 import {db} from '@/db'
 import {entries as entriesTable, pairings as pairingsTable} from '@/db/schema'
+import {getTournamentOrNotFound} from '@/lib/tournament'
 import {and, eq} from 'drizzle-orm'
 import Link from 'next/link'
-import {notFound} from 'next/navigation'
 
 export default async function TournamentAdminPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament) notFound()
+  const tournament = await getTournamentOrNotFound(slug)
 
   const rounds = Array.from({length: tournament.numRounds}, (_, i) => i + 1)
 

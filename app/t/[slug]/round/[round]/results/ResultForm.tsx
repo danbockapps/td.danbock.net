@@ -1,6 +1,7 @@
 'use client'
 
 import {getMyPairing, submitPublicResult} from '@/app/t/[slug]/round/[round]/actions'
+import {LoadingCard, UscfIdEntryCard} from '@/app/t/[slug]/round/[round]/UscfIdCard'
 import {formatRating, formatResult} from '@/lib/format'
 import {useEffect, useState, useTransition} from 'react'
 
@@ -100,11 +101,7 @@ export function ResultForm({
   }
 
   if (step === 'loading-saved') {
-    return (
-      <div className="card bg-base-200 p-6 shadow">
-        <p className="text-base-content/60">Loading…</p>
-      </div>
-    )
+    return <LoadingCard />
   }
 
   if (step === 'no-game') {
@@ -182,28 +179,14 @@ export function ResultForm({
   }
 
   return (
-    <div className="card bg-base-200 p-6 shadow">
-      <label className="fieldset-label mb-1" htmlFor="uscfId">
-        USCF ID (8 digits)
-      </label>
-      <input
-        id="uscfId"
-        className="input mb-4 w-full"
-        inputMode="numeric"
-        pattern="\d{8}"
-        maxLength={8}
-        value={uscfId}
-        onChange={(e) => setUscfId(e.target.value.replace(/\D/g, ''))}
-        autoFocus
-      />
-      {error && <p className="mb-4 text-sm text-error">{error}</p>}
-      <button
-        className="btn btn-primary"
-        onClick={findGame}
-        disabled={pending || uscfId.length === 0}
-      >
-        {pending ? 'Looking up…' : 'Find my game'}
-      </button>
-    </div>
+    <UscfIdEntryCard
+      uscfId={uscfId}
+      setUscfId={setUscfId}
+      error={error}
+      pending={pending}
+      onSubmit={findGame}
+      submitLabel="Find my game"
+      pendingLabel="Looking up…"
+    />
   )
 }

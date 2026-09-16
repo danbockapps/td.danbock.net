@@ -1,16 +1,13 @@
 import {PairingList} from '@/components/pairings/PairingList'
 import {db} from '@/db'
 import {pairings} from '@/db/schema'
+import {getTournamentOrNotFound} from '@/lib/tournament'
 import {eq} from 'drizzle-orm'
-import {notFound} from 'next/navigation'
 
 export default async function AllPairingsPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
 
-  const tournament = await db.query.tournaments.findFirst({
-    where: (t, {eq}) => eq(t.slug, slug),
-  })
-  if (!tournament) notFound()
+  const tournament = await getTournamentOrNotFound(slug)
 
   const allPairings = await db.query.pairings.findMany({
     where: eq(pairings.tournamentId, tournament.id),

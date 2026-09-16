@@ -1,7 +1,7 @@
 'use client'
 
 import {submitResult} from '@/app/admin/(protected)/tournaments/[slug]/actions'
-import {RESULT_OUTCOMES, RESULT_OUTCOME_LABELS} from '@/lib/results'
+import {RESULT_OUTCOMES, RESULT_OUTCOME_LABELS} from '@/lib/result-outcomes'
 import {useState, useTransition} from 'react'
 
 export function ResultRow({
