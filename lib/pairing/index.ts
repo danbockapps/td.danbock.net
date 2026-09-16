@@ -1,5 +1,6 @@
 import {RatingDiffMinimizerEngine} from './ratingDiffMinimizer'
 import {RatingOrderEngine} from './ratingOrder'
+import {SwissEngine} from './swiss'
 import type {PairingEngine} from './types'
 
 export type {
@@ -11,10 +12,12 @@ export type {
 } from './types'
 export {getDueColor} from './dueColor'
 export type {DueColor} from './dueColor'
+export {SwissEngine} from './swiss'
 
 const engines: Record<string, () => PairingEngine> = {
   ratingOrder: () => new RatingOrderEngine(),
   ratingDiffMinimizer: () => new RatingDiffMinimizerEngine(),
+  swiss: () => new SwissEngine(),
 }
 
 export function getPairingEngine(name: string = 'ratingDiffMinimizer'): PairingEngine {

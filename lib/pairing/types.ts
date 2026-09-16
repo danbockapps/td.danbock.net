@@ -19,6 +19,10 @@ export interface RoundHistoryEntry {
   uscfId: string
   opponentUscfId: string | null
   color: 'white' | 'black' | null
+  // Points earned that round (1 win, 0.5 draw, 0 loss; a bye is usually 1).
+  // Optional so callers that don't track scores yet can omit it; missing
+  // entries are treated as 0 points for score-group pairing.
+  points?: number
 }
 
 export interface PairingOptions {
