@@ -19,7 +19,9 @@ export function PairRoundForm({
   alreadyPaired: boolean
 }) {
   const [higherSeedColor, setHigherSeedColor] = useState<'white' | 'black'>('white')
-  const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer'>('ratingDiffMinimizer')
+  const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer' | 'swiss'>(
+    'ratingDiffMinimizer',
+  )
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<{
@@ -120,6 +122,16 @@ export function PairRoundForm({
             onChange={() => setEngine('ratingDiffMinimizer')}
           />
           Rating difference minimizer
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="engine"
+            className="radio"
+            checked={engine === 'swiss'}
+            onChange={() => setEngine('swiss')}
+          />
+          Swiss
         </label>
       </div>
 
