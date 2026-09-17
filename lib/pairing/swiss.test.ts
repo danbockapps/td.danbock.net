@@ -1,40 +1,6 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {SwissEngine} from './swiss'
-import type {PairingInput, RoundHistoryEntry} from './types'
-
-interface EntryProps {
-  entryId: number
-  rating: number | null
-  opts?: {team?: string | null; uscfId?: string}
-}
-
-function entry({entryId, rating, opts = {}}: EntryProps): PairingInput {
-  return {
-    entryId,
-    uscfId: opts.uscfId ?? String(entryId),
-    name: `Player ${entryId}`,
-    rating,
-    team: opts.team ?? null,
-  }
-}
-
-interface GameProps {
-  round: number
-  uscfId: string
-  opponentUscfId: string | null
-  color: 'white' | 'black' | null
-  points?: number
-}
-
-function game({round, uscfId, opponentUscfId, color, points}: GameProps): RoundHistoryEntry {
-  return {round, uscfId, opponentUscfId, color, points}
-}
-
-function boards(
-  results: {board: number; whiteEntryId: number | null; blackEntryId: number | null}[],
-) {
-  return results.map((r) => new Set([r.whiteEntryId, r.blackEntryId]))
-}
+import {boards, entry, game} from './testHelpers'
 
 describe('SwissEngine', () => {
   it('returns no pairings for an empty entry list', () => {
