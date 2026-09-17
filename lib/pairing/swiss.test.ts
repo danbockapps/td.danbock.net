@@ -2,11 +2,13 @@ import {afterEach, describe, expect, it, vi} from 'vitest'
 import {SwissEngine} from './swiss'
 import type {PairingInput, RoundHistoryEntry} from './types'
 
-function entry(
-  entryId: number,
-  rating: number | null,
-  opts: {team?: string | null; uscfId?: string} = {},
-): PairingInput {
+interface EntryProps {
+  entryId: number
+  rating: number | null
+  opts?: {team?: string | null; uscfId?: string}
+}
+
+function entry({entryId, rating, opts = {}}: EntryProps): PairingInput {
   return {
     entryId,
     uscfId: opts.uscfId ?? String(entryId),
@@ -16,13 +18,15 @@ function entry(
   }
 }
 
-function game(
-  round: number,
-  uscfId: string,
-  opponentUscfId: string | null,
-  color: 'white' | 'black' | null,
-  points?: number,
-): RoundHistoryEntry {
+interface GameProps {
+  round: number
+  uscfId: string
+  opponentUscfId: string | null
+  color: 'white' | 'black' | null
+  points?: number
+}
+
+function game({round, uscfId, opponentUscfId, color, points}: GameProps): RoundHistoryEntry {
   return {round, uscfId, opponentUscfId, color, points}
 }
 
@@ -40,10 +44,10 @@ describe('SwissEngine', () => {
 
   it('round 1 with no history: one score group, pairs top half vs bottom half by rating', () => {
     const engine = new SwissEngine()
-    const a = entry(1, 2000)
-    const b = entry(2, 1800)
-    const c = entry(3, 1600)
-    const d = entry(4, 1400)
+    const a = entry({entryId: 1, rating: 2000})
+    const b = entry({entryId: 2, rating: 1800})
+    const c = entry({entryId: 3, rating: 1600})
+    const d = entry({entryId: 4, rating: 1400})
 
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white'})
 
@@ -55,13 +59,16 @@ describe('SwissEngine', () => {
 
   it('pairs within score groups before mixing scores', () => {
     const engine = new SwissEngine()
-    const a = entry(1, 2000)
-    const b = entry(2, 1800)
-    const c = entry(3, 1600)
-    const d = entry(4, 1400)
+    const a = entry({entryId: 1, rating: 2000})
+    const b = entry({entryId: 2, rating: 1800})
+    const c = entry({entryId: 3, rating: 1600})
+    const d = entry({entryId: 4, rating: 1400})
 
     // A and B have a win under their belt (score 1); C and D have none.
-    const history = [game(1, '1', '9', 'white', 1), game(1, '2', '8', 'black', 1)]
+    const history = [
+      game({round: 1, uscfId: '1', opponentUscfId: '9', color: 'white', points: 1}),
+      game({round: 1, uscfId: '2', opponentUscfId: '8', color: 'black', points: 1}),
+    ]
 
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white', history})
 
@@ -71,13 +78,16 @@ describe('SwissEngine', () => {
 
   it('avoids a rematch by swapping within the score group instead of floating', () => {
     const engine = new SwissEngine()
-    const w = entry(1, 2000)
-    const x = entry(2, 1800)
-    const y = entry(3, 1600)
-    const z = entry(4, 1400)
+    const w = entry({entryId: 1, rating: 2000})
+    const x = entry({entryId: 2, rating: 1800})
+    const y = entry({entryId: 3, rating: 1600})
+    const z = entry({entryId: 4, rating: 1400})
 
     // W already played Y; the naive top-vs-bottom pairing (W-Y, X-Z) is illegal.
-    const history = [game(1, '1', '3', 'white'), game(1, '3', '1', 'black')]
+    const history = [
+      game({round: 1, uscfId: '1', opponentUscfId: '3', color: 'white'}),
+      game({round: 1, uscfId: '3', opponentUscfId: '1', color: 'black'}),
+    ]
 
     const results = engine.pair([w, x, y, z], {higherSeedColor: 'white', history})
 
@@ -87,24 +97,24 @@ describe('SwissEngine', () => {
 
   it('floats a player down a score group when no legal opponent remains in-group', () => {
     const engine = new SwissEngine()
-    const w = entry(1, 2000)
-    const x = entry(2, 1800)
-    const y = entry(3, 1600)
-    const z = entry(4, 1400)
-    const p = entry(5, 1500)
-    const q = entry(6, 1300)
+    const w = entry({entryId: 1, rating: 2000})
+    const x = entry({entryId: 2, rating: 1800})
+    const y = entry({entryId: 3, rating: 1600})
+    const z = entry({entryId: 4, rating: 1400})
+    const p = entry({entryId: 5, rating: 1500})
+    const q = entry({entryId: 6, rating: 1300})
 
     // W and X/Y/Z all have a win (score 1); P and Q have none (score 0).
     // W has already played both Y and Z, so W can't be legally paired
     // within the top score group at all and must float down.
     const history = [
-      game(1, '1', '9', 'white', 1),
-      game(1, '3', '1', 'black'),
-      game(2, '1', '4', 'white'),
-      game(2, '4', '1', 'black'),
-      game(1, '2', '8', 'white', 1),
-      game(1, '3', '7', 'black', 1),
-      game(1, '4', '6', 'black', 1),
+      game({round: 1, uscfId: '1', opponentUscfId: '9', color: 'white', points: 1}),
+      game({round: 1, uscfId: '3', opponentUscfId: '1', color: 'black'}),
+      game({round: 2, uscfId: '1', opponentUscfId: '4', color: 'white'}),
+      game({round: 2, uscfId: '4', opponentUscfId: '1', color: 'black'}),
+      game({round: 1, uscfId: '2', opponentUscfId: '8', color: 'white', points: 1}),
+      game({round: 1, uscfId: '3', opponentUscfId: '7', color: 'black', points: 1}),
+      game({round: 1, uscfId: '4', opponentUscfId: '6', color: 'black', points: 1}),
     ]
 
     const results = engine.pair([w, x, y, z, p, q], {higherSeedColor: 'white', history})
@@ -120,9 +130,9 @@ describe('SwissEngine', () => {
 
   it('gives the bye to the lowest-scoring, lowest-rated player when the pool is odd', () => {
     const engine = new SwissEngine()
-    const a = entry(1, 2000)
-    const b = entry(2, 1800)
-    const c = entry(3, 1600)
+    const a = entry({entryId: 1, rating: 2000})
+    const b = entry({entryId: 2, rating: 1800})
+    const c = entry({entryId: 3, rating: 1600})
 
     const results = engine.pair([a, b, c], {higherSeedColor: 'white'})
 
@@ -134,10 +144,10 @@ describe('SwissEngine', () => {
 
   it('avoids pairing same-team players by swapping within the group', () => {
     const engine = new SwissEngine()
-    const a = entry(1, 2000, {team: 'Red'})
-    const b = entry(2, 1800)
-    const c = entry(3, 1600, {team: 'Red'})
-    const d = entry(4, 1400)
+    const a = entry({entryId: 1, rating: 2000, opts: {team: 'Red'}})
+    const b = entry({entryId: 2, rating: 1800})
+    const c = entry({entryId: 3, rating: 1600, opts: {team: 'Red'}})
+    const d = entry({entryId: 4, rating: 1400})
 
     // Naive top-vs-bottom would pair A-C, but they share a team.
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white'})
@@ -147,20 +157,20 @@ describe('SwissEngine', () => {
 
   it('transposes bottom-half partners to increase the number of players getting their due color', () => {
     const engine = new SwissEngine()
-    const a = entry(1, 2000)
-    const b = entry(2, 1800)
-    const c = entry(3, 1600)
-    const d = entry(4, 1400)
+    const a = entry({entryId: 1, rating: 2000})
+    const b = entry({entryId: 2, rating: 1800})
+    const c = entry({entryId: 3, rating: 1600})
+    const d = entry({entryId: 4, rating: 1400})
 
     // A and C are both due black (played white last time); B and D are
     // both due white (played black last time). The naive pairing (A-C,
     // B-D) gives only one player per board their due color; transposing
     // to (A-D, B-C) satisfies everyone.
     const history = [
-      game(1, '1', '91', 'white'),
-      game(1, '3', '92', 'white'),
-      game(1, '2', '93', 'black'),
-      game(1, '4', '94', 'black'),
+      game({round: 1, uscfId: '1', opponentUscfId: '91', color: 'white'}),
+      game({round: 1, uscfId: '3', opponentUscfId: '92', color: 'white'}),
+      game({round: 1, uscfId: '2', opponentUscfId: '93', color: 'black'}),
+      game({round: 1, uscfId: '4', opponentUscfId: '94', color: 'black'}),
     ]
 
     const results = engine.pair([a, b, c, d], {higherSeedColor: 'white', history})
@@ -183,7 +193,9 @@ describe('SwissEngine', () => {
       const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       const engine = new SwissEngine()
 
-      engine.pair([entry(1, 1000), entry(2, 1100)], {higherSeedColor: 'white'})
+      engine.pair([entry({entryId: 1, rating: 1000}), entry({entryId: 2, rating: 1100})], {
+        higherSeedColor: 'white',
+      })
 
       expect(spy).not.toHaveBeenCalled()
       expect(engine.log.length).toBeGreaterThan(0)
@@ -193,7 +205,9 @@ describe('SwissEngine', () => {
       const spy = vi.spyOn(console, 'log').mockImplementation(() => {})
       const engine = new SwissEngine({debug: true})
 
-      engine.pair([entry(1, 1000), entry(2, 1100)], {higherSeedColor: 'white'})
+      engine.pair([entry({entryId: 1, rating: 1000}), entry({entryId: 2, rating: 1100})], {
+        higherSeedColor: 'white',
+      })
 
       expect(spy).toHaveBeenCalledTimes(engine.log.length)
     })
