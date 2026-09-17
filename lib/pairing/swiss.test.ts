@@ -184,6 +184,45 @@ describe('SwissEngine', () => {
     expect(boardBC).toEqual({board: boardBC?.board, whiteEntryId: 2, blackEntryId: 3})
   })
 
+  it('pairs the second round when 2 of 8 players are new and the lowest-rated player won round 1', () => {
+    const engine = new SwissEngine()
+    const p1 = entry({entryId: 1, rating: 2000})
+    const p2 = entry({entryId: 2, rating: 1800})
+    const p3 = entry({entryId: 3, rating: 1600})
+    const p4 = entry({entryId: 4, rating: 1400})
+    const p5 = entry({entryId: 5, rating: 1200})
+    const p6 = entry({entryId: 6, rating: 1000})
+    const p7 = entry({entryId: 7, rating: 1300})
+    const p8 = entry({entryId: 8, rating: 1100})
+
+    // P1 and P2 are new entrants joining in round 2 (score 0, no history).
+    // Of the 6 who played round 1: P3 and P4 drew, P7 and P8 drew, and P6
+    // (the lowest-rated of all six) beat P5.
+    const history = [
+      game({round: 1, uscfId: '3', opponentUscfId: '4', color: 'white', points: 0.5}),
+      game({round: 1, uscfId: '4', opponentUscfId: '3', color: 'black', points: 0.5}),
+      game({round: 1, uscfId: '5', opponentUscfId: '6', color: 'white', points: 0}),
+      game({round: 1, uscfId: '6', opponentUscfId: '5', color: 'black', points: 1}),
+      game({round: 1, uscfId: '7', opponentUscfId: '8', color: 'white', points: 0.5}),
+      game({round: 1, uscfId: '8', opponentUscfId: '7', color: 'black', points: 0.5}),
+    ]
+
+    const results = engine.pair([p1, p2, p3, p4, p5, p6, p7, p8], {
+      higherSeedColor: 'white',
+      history,
+    })
+
+    // P6 (1 pt) has no same-score peer, so floats down into the 0.5 pt
+    // group. There, P3 and P4 pair with P7 and P8 respectively rather than
+    // rematching each other, then get transposed to P3-P8/P4-P7 for color
+    // balance, so P6 floats down again into the 0 pt group, where it joins
+    // P1, P2 and P5, which pairs top half vs bottom half by rating.
+    expect(boards(results)).toEqual(
+      expect.arrayContaining([new Set([3, 8]), new Set([4, 7]), new Set([1, 5]), new Set([2, 6])]),
+    )
+    expect(results).toHaveLength(4)
+  })
+
   describe('debug flag', () => {
     afterEach(() => {
       vi.restoreAllMocks()
