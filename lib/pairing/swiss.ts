@@ -27,8 +27,12 @@ type Pair = {a: PairingInput; b: PairingInput}
 
 // A basic Swiss pairing engine: groups players by score, pairs top half vs
 // bottom half within each score group, avoids rematches and same-team
-// pairings (floating players to the next score group when unavoidable), and
-// nudges players toward their due color where it doesn't cost legality.
+// pairings, and nudges players toward their due color where it doesn't cost
+// legality. When a score group has an odd number of players, its
+// lowest-scoring/lowest-rated player floats down and plays the
+// highest-rated legal opponent in the next group down (rather than being
+// merged into that group and re-split), so a float still plays someone near
+// the top of their new group instead of drifting toward its bottom half.
 // This intentionally does not implement the full FIDE/USCF Swiss pairing
 // rules (acceleration, complex float bookkeeping across many rounds, etc.).
 export class SwissEngine implements PairingEngine {
@@ -100,15 +104,30 @@ export class SwissEngine implements PairingEngine {
 
     for (const score of orderedScores) {
       const group = groupsByScore.get(score) ?? []
-      const working = [...carryover, ...group].sort((a, b) => ratingOf(b) - ratingOf(a))
-      carryover = []
+      let working = [...group].sort((a, b) => ratingOf(b) - ratingOf(a))
+      const groupPairs: Pair[] = []
 
-      if (carryover.length === 0 && (group.length > 0 || working.length > 0)) {
+      if (carryover.length > 0) {
+        const {pairs: floatPairs, unmatched} = this.matchFloaters(carryover, working, isLegalPair)
+        for (const {a: floater, b: opponent} of floatPairs) {
+          this.note(
+            `${floater.name} floats down from a higher score group and plays ${opponent.name}, the highest-rated available opponent in the ${score} pt group`,
+          )
+        }
+        for (const floater of unmatched) {
+          this.note(
+            `${floater.name} floated down to the ${score} pt group but has no legal opponent here; floating further`,
+          )
+        }
+        groupPairs.push(...floatPairs)
+        const claimed = new Set(floatPairs.map((p) => p.b))
+        working = working.filter((p) => !claimed.has(p))
+        carryover = unmatched
+      }
+
+      if (working.length > 0) {
         this.note(
-          `Score group ${score}: pairing ${working.length} player(s)` +
-            (group.length !== working.length
-              ? ` (including ${working.length - group.length} floated down from a higher group)`
-              : ''),
+          `Score group ${score}: pairing ${working.length} remaining player(s) within the group`,
         )
       }
 
@@ -131,7 +150,6 @@ export class SwissEngine implements PairingEngine {
       const top = working.slice(0, half)
       const bottom = working.slice(half)
       const bottomUsed = new Array(bottom.length).fill(false)
-      const groupPairs: Pair[] = []
 
       for (let i = 0; i < top.length; i++) {
         const a = top[i]
@@ -207,6 +225,59 @@ export class SwissEngine implements PairingEngine {
     }
 
     return results
+  }
+
+  // Matches players floating down from a higher score group against the
+  // destination group, preferring the highest-rated legal (no rematch, no
+  // same-team) opponent for each floater. Since floaters can compete for
+  // the same top candidate, this searches jointly across all floaters
+  // (backtracking over opponent choice) rather than deciding one floater at
+  // a time, so an earlier floater doesn't grab the only legal opponent left
+  // for a later one. Maximizes how many floaters get matched; any left
+  // over float further down to the next group.
+  private matchFloaters(
+    floaters: PairingInput[],
+    group: PairingInput[],
+    isLegalPair: (a: PairingInput, b: PairingInput) => boolean,
+  ): {pairs: Pair[]; unmatched: PairingInput[]} {
+    let best: {pairs: Pair[]; unmatched: PairingInput[]} | null = null
+
+    const search = (
+      index: number,
+      avail: PairingInput[],
+      pairs: Pair[],
+      unmatched: PairingInput[],
+    ): void => {
+      if (index >= floaters.length) {
+        if (!best || pairs.length > best.pairs.length) {
+          best = {pairs: [...pairs], unmatched: [...unmatched]}
+        }
+        return
+      }
+
+      const floater = floaters[index]
+      const candidates = [...avail]
+        .filter((p) => isLegalPair(floater, p))
+        .sort((a, b) => ratingOf(b) - ratingOf(a))
+
+      for (const candidate of candidates) {
+        pairs.push({a: floater, b: candidate})
+        search(
+          index + 1,
+          avail.filter((p) => p !== candidate),
+          pairs,
+          unmatched,
+        )
+        pairs.pop()
+      }
+
+      unmatched.push(floater)
+      search(index + 1, avail, pairs, unmatched)
+      unmatched.pop()
+    }
+
+    search(0, group, [], [])
+    return best ?? {pairs: [], unmatched: [...floaters]}
   }
 
   // Picks who sits out when the pool is odd: the lowest-scoring player who

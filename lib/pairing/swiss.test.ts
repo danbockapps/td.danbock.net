@@ -128,6 +128,35 @@ describe('SwissEngine', () => {
     expect(engine.log.some((l) => l.includes('floating') || l.includes('float'))).toBe(true)
   })
 
+  it('floats down to play the highest-rated legal opponent in the next score group', () => {
+    const engine = new SwissEngine()
+    const w = entry({entryId: 1, rating: 2000})
+    const x = entry({entryId: 2, rating: 1800})
+    const y = entry({entryId: 3, rating: 1600})
+    const p = entry({entryId: 4, rating: 1500})
+    const q = entry({entryId: 5, rating: 1300})
+    const r = entry({entryId: 6, rating: 1100})
+
+    // W, X and Y have a win (score 1, odd group); P, Q and R have none.
+    const history = [
+      game({round: 1, uscfId: '1', opponentUscfId: '9', color: 'white', points: 1}),
+      game({round: 1, uscfId: '2', opponentUscfId: '8', color: 'white', points: 1}),
+      game({round: 1, uscfId: '3', opponentUscfId: '7', color: 'black', points: 1}),
+    ]
+
+    const results = engine.pair([w, x, y, p, q, r], {higherSeedColor: 'white', history})
+
+    // W pairs with X in the top group; Y (lowest-rated of the three) floats
+    // down and plays P, the highest-rated player in the 0 pt group, since
+    // they haven't played before. Q and R then pair with each other.
+    expect(boards(results)).toEqual(
+      expect.arrayContaining([new Set([1, 2]), new Set([3, 4]), new Set([5, 6])]),
+    )
+    expect(engine.log.some((l) => l.includes('floats down') && l.includes('highest-rated'))).toBe(
+      true,
+    )
+  })
+
   it('gives the bye to the lowest-scoring, lowest-rated player when the pool is odd', () => {
     const engine = new SwissEngine()
     const a = entry({entryId: 1, rating: 2000})
@@ -213,13 +242,13 @@ describe('SwissEngine', () => {
     })
 
     // P6 (1 pt) has no same-score peer, so floats down into the 0.5 pt
-    // group. There, P6's actual score (1 pt) outranks the group's other
-    // players, so P8 (the lowest-scoring, lowest-rated genuine 0.5 pt
-    // player) floats further instead of P6. P3 and P4 pair with P7 and P6
-    // (after a color-balance transposition), and P8 joins P1, P2 and P5 in
-    // the 0 pt group, which pairs top half vs bottom half by rating.
+    // group and plays P3, the highest-rated player there (they haven't
+    // played before). That leaves P4, P7 and P8 in the 0.5 pt group; P8
+    // (lowest-scoring, lowest-rated) floats further into the 0 pt group and
+    // plays P1, the highest-rated player there, while P4 pairs with P7 and
+    // P2 pairs with P5.
     expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([3, 6]), new Set([4, 7]), new Set([1, 5]), new Set([2, 8])]),
+      expect.arrayContaining([new Set([3, 6]), new Set([4, 7]), new Set([1, 8]), new Set([2, 5])]),
     )
     expect(results).toHaveLength(4)
   })
