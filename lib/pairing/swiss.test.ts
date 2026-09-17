@@ -213,12 +213,13 @@ describe('SwissEngine', () => {
     })
 
     // P6 (1 pt) has no same-score peer, so floats down into the 0.5 pt
-    // group. There, P3 and P4 pair with P7 and P8 respectively rather than
-    // rematching each other, then get transposed to P3-P8/P4-P7 for color
-    // balance, so P6 floats down again into the 0 pt group, where it joins
-    // P1, P2 and P5, which pairs top half vs bottom half by rating.
+    // group. There, P6's actual score (1 pt) outranks the group's other
+    // players, so P8 (the lowest-scoring, lowest-rated genuine 0.5 pt
+    // player) floats further instead of P6. P3 and P4 pair with P7 and P6
+    // (after a color-balance transposition), and P8 joins P1, P2 and P5 in
+    // the 0 pt group, which pairs top half vs bottom half by rating.
     expect(boards(results)).toEqual(
-      expect.arrayContaining([new Set([3, 8]), new Set([4, 7]), new Set([1, 5]), new Set([2, 6])]),
+      expect.arrayContaining([new Set([3, 6]), new Set([4, 7]), new Set([1, 5]), new Set([2, 8])]),
     )
     expect(results).toHaveLength(4)
   })

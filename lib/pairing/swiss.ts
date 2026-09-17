@@ -113,11 +113,17 @@ export class SwissEngine implements PairingEngine {
       }
 
       if (working.length % 2 !== 0) {
-        const floated = working[working.length - 1]
+        // Float by actual score first (ties broken by rating) so a player
+        // who already floated in from a higher score group isn't floated
+        // again just because their rating happens to be low.
+        const [floated] = [...working].sort((a, b) => {
+          const scoreDiff = (scores.get(a.uscfId) ?? 0) - (scores.get(b.uscfId) ?? 0)
+          return scoreDiff !== 0 ? scoreDiff : ratingOf(a) - ratingOf(b)
+        })
         this.note(
-          `Score group ${score}: odd number of players (${working.length}); floating lowest-rated ${floated.name} down to the next group`,
+          `Score group ${score}: odd number of players (${working.length}); floating lowest-scoring, lowest-rated ${floated.name} down to the next group`,
         )
-        working.pop()
+        working.splice(working.indexOf(floated), 1)
         carryover.push(floated)
       }
 
