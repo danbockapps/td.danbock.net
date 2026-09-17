@@ -8,6 +8,35 @@ import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
+// This whole function exists to translate the `results.outcome` enum (stored
+// relative to color) into a per-player point value. If results stored
+// whitePoints/blackPoints directly, this conversion — and the risk of a
+// caller forgetting to do it (see the round-2-scores-all-zero bug this fixed) —
+// would go away. Also, `history` here is rebuilt from scratch on every
+// pairRound call by re-joining pairings+results for every prior round; a
+// denormalized per-entry running score (updated when a result is entered)
+// would avoid recomputation and make this a plain lookup.
+function outcomeToPoints(
+  outcome: ResultOutcome | undefined,
+  side: 'white' | 'black',
+): number | undefined {
+  if (!outcome) return undefined
+  switch (outcome) {
+    case 'white':
+      return side === 'white' ? 1 : 0
+    case 'black':
+      return side === 'black' ? 1 : 0
+    case 'draw':
+      return 0.5
+    case 'white_forfeit':
+      return side === 'white' ? 0 : 1
+    case 'black_forfeit':
+      return side === 'black' ? 0 : 1
+    case 'double_forfeit':
+      return 0
+  }
+}
+
 async function requireTournament(slug: string) {
   const tournament = await db.query.tournaments.findFirst({
     where: eq(tournaments.slug, slug),
@@ -89,16 +118,18 @@ export async function pairRound(
 
   const priorPairings = await db.query.pairings.findMany({
     where: and(eq(pairings.tournamentId, tournament.id), lt(pairings.round, round)),
-    with: {white: true, black: true},
+    with: {white: true, black: true, result: true},
   })
   const history: RoundHistoryEntry[] = priorPairings.flatMap((p) => {
     const rows: RoundHistoryEntry[] = []
+    const outcome = p.result?.outcome
     if (p.white) {
       rows.push({
         round: p.round,
         uscfId: p.white.uscfId,
         opponentUscfId: p.black?.uscfId ?? null,
         color: p.black ? 'white' : null,
+        points: outcomeToPoints(outcome, 'white'),
       })
     }
     if (p.black) {
@@ -107,6 +138,7 @@ export async function pairRound(
         uscfId: p.black.uscfId,
         opponentUscfId: p.white?.uscfId ?? null,
         color: p.white ? 'black' : null,
+        points: outcomeToPoints(outcome, 'black'),
       })
     }
     return rows

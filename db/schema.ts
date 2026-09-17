@@ -68,6 +68,10 @@ export const results = sqliteTable('results', {
     .notNull()
     .unique()
     .references(() => pairings.id),
+  // Stored relative to color (who won), not per-player points. Every consumer that
+  // needs a player's score (e.g. pairing.ts's outcomeToPoints) has to re-derive it
+  // from this enum. Consider storing whitePoints/blackPoints (0/0.5/1) directly
+  // instead, so scoring is a plain sum with no per-outcome branching anywhere.
   outcome: text('outcome', {
     enum: ['white', 'black', 'draw', 'white_forfeit', 'black_forfeit', 'double_forfeit'],
   }).notNull(),
