@@ -204,9 +204,14 @@ export class SwissEngine implements PairingEngine {
       if (!byeEntry) byeEntry = carryover[0]
     }
 
-    const orderedPairs = [...allPairs].sort(
-      (x, y) => Math.max(ratingOf(y.a), ratingOf(y.b)) - Math.max(ratingOf(x.a), ratingOf(x.b)),
-    )
+    const pairScore = (pair: Pair): number =>
+      (scores.get(pair.a.uscfId) ?? 0) + (scores.get(pair.b.uscfId) ?? 0)
+
+    const orderedPairs = [...allPairs].sort((x, y) => {
+      const scoreDiff = pairScore(y) - pairScore(x)
+      if (scoreDiff !== 0) return scoreDiff
+      return Math.max(ratingOf(y.a), ratingOf(y.b)) - Math.max(ratingOf(x.a), ratingOf(x.b))
+    })
 
     const results = orderedPairs.map((pair, index) =>
       this.assignColors(pair, options, history, index + 1),

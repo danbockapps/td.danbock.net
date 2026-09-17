@@ -150,8 +150,8 @@ describe('SwissEngine: eight-player, three-round tournament with randomized resu
     // it floats further and plays Player 6, the highest-rated player in
     // the 0pt group. Players 2/3 and 7/8 pair off within their own groups.
     expect(results).toEqual([
-      {board: 1, whiteEntryId: 4, blackEntryId: 1},
-      {board: 2, whiteEntryId: 2, blackEntryId: 3},
+      {board: 1, whiteEntryId: 2, blackEntryId: 3},
+      {board: 2, whiteEntryId: 4, blackEntryId: 1},
       {board: 3, whiteEntryId: 5, blackEntryId: 6},
       {board: 4, whiteEntryId: 7, blackEntryId: 8},
     ])
@@ -165,34 +165,38 @@ describe('SwissEngine: eight-player, three-round tournament with randomized resu
       {board: 4, whiteEntryId: 8, blackEntryId: 4},
     ]
     const round2: PairingResult[] = [
-      {board: 1, whiteEntryId: 4, blackEntryId: 1},
-      {board: 2, whiteEntryId: 2, blackEntryId: 3},
+      {board: 1, whiteEntryId: 2, blackEntryId: 3},
+      {board: 2, whiteEntryId: 4, blackEntryId: 1},
       {board: 3, whiteEntryId: 5, blackEntryId: 6},
       {board: 4, whiteEntryId: 7, blackEntryId: 8},
     ]
     const history = historyThroughRound([round1, round2])
 
-    // Round 2 results (seeded RNG): Player 4 beat Player 1, Player 2 beat
-    // Player 3, Player 5 and Player 6 drew, Player 7 and Player 8 drew.
+    // Round 2 results (seeded RNG): Player 3 beat Player 2, Player 1 and
+    // Player 4 drew, Player 5 beat Player 6, Player 7 and Player 8 drew.
     //
-    // Standings before round 3: 2pt - Player 2, Player 4;
-    //                         1.5pt - Player 5;
-    //                           1pt - Player 3;
-    //                         0.5pt - Player 1, Player 7, Player 8;
+    // Standings before round 3: 2pt - Player 3;
+    //                         1.5pt - Player 1, Player 5;
+    //                           1pt - Player 2, Player 4;
+    //                         0.5pt - Player 7, Player 8;
     //                           0pt - Player 6.
     const engine = new SwissEngine()
     const results = engine.pair(players, {higherSeedColor: 'white', history})
 
-    // Every group but 0.5pt already has a legal in-group pairing except
-    // where it's alone: Player 5 (1.5pt, alone in its group) floats down
-    // and plays Player 3, the highest-rated (and only) player in the 1pt
-    // group. The 0.5pt group has 3 players; Player 8 (lowest-rated of the
-    // tied three) floats down and plays Player 6, the only player in the
-    // 0pt group. Players 2/4 and 1/7 pair off within their own groups.
+    // Every group is a singleton or has an odd remainder once its floater
+    // is placed, so the floats cascade all the way down: Player 3 (2pt,
+    // alone) floats and plays Player 1, the highest-rated player in the
+    // 1.5pt group; that leaves Player 5 alone there, so it floats and
+    // plays Player 2, the highest-rated player in the 1pt group; that
+    // leaves Player 4 alone there, so it floats and plays Player 7, the
+    // highest-rated player in the 0.5pt group; that leaves Player 8 alone
+    // there, so it floats down to play Player 6, the only player in the
+    // 0pt group. Boards are ordered by the pair's combined score (3.5,
+    // 2.5, 1.5, 0.5).
     expect(results).toEqual([
-      {board: 1, whiteEntryId: 1, blackEntryId: 7},
-      {board: 2, whiteEntryId: 4, blackEntryId: 2},
-      {board: 3, whiteEntryId: 3, blackEntryId: 5},
+      {board: 1, whiteEntryId: 1, blackEntryId: 3},
+      {board: 2, whiteEntryId: 5, blackEntryId: 2},
+      {board: 3, whiteEntryId: 7, blackEntryId: 4},
       {board: 4, whiteEntryId: 6, blackEntryId: 8},
     ])
   })
