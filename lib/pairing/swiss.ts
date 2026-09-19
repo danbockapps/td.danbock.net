@@ -134,14 +134,32 @@ export class SwissEngine implements PairingEngine {
       if (working.length % 2 !== 0) {
         // Float by actual score first (ties broken by rating) so a player
         // who already floated in from a higher score group isn't floated
-        // again just because their rating happens to be low.
-        const [floated] = [...working].sort((a, b) => {
+        // again just because their rating happens to be low. But skip past
+        // a candidate whose departure would leave the rest of the group
+        // without any legal way to pair off (e.g. the only two players left
+        // already played each other), since that just trades one float for
+        // a worse cascade of floats once pairing is attempted below.
+        const byPriority = [...working].sort((a, b) => {
           const scoreDiff = (scores.get(a.uscfId) ?? 0) - (scores.get(b.uscfId) ?? 0)
           return scoreDiff !== 0 ? scoreDiff : ratingOf(a) - ratingOf(b)
         })
-        this.note(
-          `Score group ${score}: odd number of players (${working.length}); floating lowest-scoring, lowest-rated ${floated.name} down to the next group`,
-        )
+        const floated =
+          byPriority.find((candidate) =>
+            this.hasPerfectMatching(
+              working.filter((p) => p !== candidate),
+              isLegalPair,
+            ),
+          ) ?? byPriority[0]
+
+        if (floated === byPriority[0]) {
+          this.note(
+            `Score group ${score}: odd number of players (${working.length}); floating lowest-scoring, lowest-rated ${floated.name} down to the next group`,
+          )
+        } else {
+          this.note(
+            `Score group ${score}: odd number of players (${working.length}); floating lowest-scoring, lowest-rated ${byPriority[0].name} would leave the rest of the group unable to pair off legally, so floating ${floated.name} instead`,
+          )
+        }
         working.splice(working.indexOf(floated), 1)
         carryover.push(floated)
       }
@@ -149,43 +167,40 @@ export class SwissEngine implements PairingEngine {
       const half = working.length / 2
       const top = working.slice(0, half)
       const bottom = working.slice(half)
-      const bottomUsed = new Array(bottom.length).fill(false)
 
-      for (let i = 0; i < top.length; i++) {
-        const a = top[i]
-        let matchedIndex = -1
-        for (let j = 0; j < bottom.length; j++) {
-          if (bottomUsed[j]) continue
-          if (isLegalPair(a, bottom[j])) {
-            matchedIndex = j
-            break
-          }
-        }
+      // Maximize the number of pairs formed between top and bottom halves,
+      // rather than greedily matching each top player to the first legal
+      // bottom player in array order: a greedy first-fit can grab a
+      // candidate that was the only legal option for someone else, causing
+      // both to float when a different pairing of the same players would
+      // have paired everyone off (see matchTopAndBottom).
+      const {
+        pairs: groupInternalPairs,
+        unmatchedTop,
+        unmatchedBottom,
+      } = this.matchTopAndBottom(top, bottom, isLegalPair)
 
-        if (matchedIndex === -1) {
+      for (const {a, b} of groupInternalPairs) {
+        if (top.indexOf(a) !== bottom.indexOf(b)) {
           this.note(
-            `Score group ${score}: no legal opponent remains for ${a.name} in this group (rematch or same-team conflict with everyone left); floating down to the next group`,
-          )
-          carryover.push(a)
-          continue
-        }
-
-        if (matchedIndex !== i) {
-          this.note(
-            `Score group ${score}: ${a.name} vs board-position opponent was illegal; swapped to pair with ${bottom[matchedIndex].name} instead`,
+            `Score group ${score}: ${a.name} vs board-position opponent was illegal; swapped to pair with ${b.name} instead`,
           )
         }
-        bottomUsed[matchedIndex] = true
-        groupPairs.push({a, b: bottom[matchedIndex]})
+        groupPairs.push({a, b})
       }
 
-      for (let j = 0; j < bottom.length; j++) {
-        if (!bottomUsed[j]) {
-          this.note(
-            `Score group ${score}: ${bottom[j].name} was left without a legal opponent; floating down to the next group`,
-          )
-          carryover.push(bottom[j])
-        }
+      for (const a of unmatchedTop) {
+        this.note(
+          `Score group ${score}: no legal opponent remains for ${a.name} in this group (rematch or same-team conflict with everyone left); floating down to the next group`,
+        )
+        carryover.push(a)
+      }
+
+      for (const b of unmatchedBottom) {
+        this.note(
+          `Score group ${score}: ${b.name} was left without a legal opponent; floating down to the next group`,
+        )
+        carryover.push(b)
       }
 
       this.applyColorTransposition(groupPairs, history, score, isLegalPair)
@@ -285,6 +300,93 @@ export class SwissEngine implements PairingEngine {
     return best ?? {pairs: [], unmatched: [...floaters]}
   }
 
+  // Pairs a score group's top half against its bottom half (both already
+  // rating-sorted, descending), maximizing the number of legal pairs formed
+  // rather than greedily matching each top player to the first legal bottom
+  // player in array order. A greedy first-fit can claim a bottom player who
+  // was the only legal option left for someone else, floating both when a
+  // different pairing of the same players would have paired everyone off.
+  //
+  // Runs a plain greedy first-fit pass first (identical to, and as fast as,
+  // the original top-vs-bottom loop), then, only for whichever top players
+  // that pass left unmatched, searches for a Kuhn's-algorithm augmenting
+  // path - reassigning an already-matched bottom player to free up a legal
+  // opponent - to rescue pairings the greedy pass's fixed left-to-right
+  // order alone would strand. Restricting the augmenting search to only the
+  // players greedy couldn't match keeps the common case (everyone pairs off
+  // without any reshuffling) byte-for-byte identical to the old behavior,
+  // and keeps this polynomial time - unlike matchFloaters' exhaustive
+  // search, top and bottom halves can each run to a dozen-plus players,
+  // where exhaustive search over every possible matching is intractable.
+  private matchTopAndBottom(
+    top: PairingInput[],
+    bottom: PairingInput[],
+    isLegalPair: (a: PairingInput, b: PairingInput) => boolean,
+  ): {pairs: Pair[]; unmatchedTop: PairingInput[]; unmatchedBottom: PairingInput[]} {
+    const matchedTopFor = new Map<PairingInput, PairingInput>()
+    const matchedTop = new Set<PairingInput>()
+
+    const assign = (b: PairingInput, a: PairingInput): void => {
+      matchedTopFor.set(b, a)
+      matchedTop.add(a)
+    }
+
+    for (const a of top) {
+      const b = bottom.find(
+        (candidate) => isLegalPair(a, candidate) && !matchedTopFor.has(candidate),
+      )
+      if (b) assign(b, a)
+    }
+
+    const tryAssign = (a: PairingInput, visited: Set<PairingInput>): boolean => {
+      for (const b of bottom) {
+        if (!isLegalPair(a, b) || visited.has(b)) continue
+        visited.add(b)
+        const currentTop = matchedTopFor.get(b)
+        if (currentTop === undefined || tryAssign(currentTop, visited)) {
+          assign(b, a)
+          return true
+        }
+      }
+      return false
+    }
+
+    for (const a of top) {
+      if (!matchedTop.has(a)) tryAssign(a, new Set())
+    }
+
+    const pairs: Pair[] = []
+    for (const [b, a] of matchedTopFor) pairs.push({a, b})
+    pairs.sort((x, y) => top.indexOf(x.a) - top.indexOf(y.a))
+
+    const unmatchedTop = top.filter((a) => !matchedTop.has(a))
+    const unmatchedBottom = bottom.filter((b) => !matchedTopFor.has(b))
+
+    return {pairs, unmatchedTop, unmatchedBottom}
+  }
+
+  // Whether every player in the (even-sized) list can be paired off with
+  // some other player in the list, all pairs legal. Used to check, before
+  // committing to a float, that doing so won't strand the rest of a group
+  // with no legal way to pair off. Exhaustive backtracking search; fine for
+  // the small group sizes a single score group has in practice.
+  private hasPerfectMatching(
+    players: PairingInput[],
+    isLegalPair: (a: PairingInput, b: PairingInput) => boolean,
+  ): boolean {
+    if (players.length === 0) return true
+    const [first, ...rest] = players
+    for (let i = 0; i < rest.length; i++) {
+      if (
+        isLegalPair(first, rest[i]) &&
+        this.hasPerfectMatching([...rest.slice(0, i), ...rest.slice(i + 1)], isLegalPair)
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+
   // Picks who sits out when the pool is odd: the lowest-scoring player who
   // hasn't already had a bye, preferring the lowest rating to break ties.
   // Falls back to the lowest-scoring/lowest-rated player overall if
@@ -317,6 +419,11 @@ export class SwissEngine implements PairingEngine {
     score: number,
     isLegalPair: (a: PairingInput, b: PairingInput) => boolean,
   ): void {
+    this.note(
+      `Score group ${score}: candidate pairing sheet before color transposition:\n` +
+        groupPairs.map((p, i) => `  ${i + 1}. ${p.a.name} vs ${p.b.name}`).join('\n'),
+    )
+
     const satisfiedCount = (pair: Pair): number => {
       const dueA = getDueColor(pair.a.uscfId, history).color
       const dueB = getDueColor(pair.b.uscfId, history).color
@@ -325,12 +432,17 @@ export class SwissEngine implements PairingEngine {
       return dueA !== dueB ? 2 : 1
     }
 
+    // Try swaps between adjacent boards first, then boards two apart, and so
+    // on, so that when a swap does improve color balance it disturbs the
+    // fewest boards possible. Restart from the smallest distance after every
+    // applied swap, since a nearby improving swap may now be available.
     let improved = true
     while (improved) {
       improved = false
 
-      for (let i = 0; i < groupPairs.length; i++) {
-        for (let j = i + 1; j < groupPairs.length; j++) {
+      outer: for (let distance = 1; distance < groupPairs.length; distance++) {
+        for (let i = 0; i + distance < groupPairs.length; i++) {
+          const j = i + distance
           const pairI = groupPairs[i]
           const pairJ = groupPairs[j]
           const swappedI = {a: pairI.a, b: pairJ.b}
@@ -353,6 +465,7 @@ export class SwissEngine implements PairingEngine {
             groupPairs[i] = swappedI
             groupPairs[j] = swappedJ
             improved = true
+            break outer
           } else {
             this.note(
               `Score group ${score}: considered transposing ${pairI.b.name} and ${pairJ.b.name} for color balance (${before} -> ${after}); no improvement, rejected`,

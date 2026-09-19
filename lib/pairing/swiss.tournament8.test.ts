@@ -1,7 +1,8 @@
 import {describe, expect, it} from 'vitest'
 import {SwissEngine} from './swiss'
-import {entry, game} from './testHelpers'
-import type {PairingResult, RoundHistoryEntry} from './types'
+import {historyThroughRound} from './swissSimulation'
+import {entry} from './testHelpers'
+import type {PairingResult} from './types'
 
 // Simulates a full three-round Swiss tournament with eight players,
 // verifying pairing, board number, and color assignment for every round.
@@ -27,89 +28,7 @@ const p8 = entry({entryId: 8, rating: 950})
 const players = [p1, p2, p3, p4, p5, p6, p7, p8]
 const ratingOf = new Map(players.map((p) => [p.uscfId, p.rating as number]))
 
-// A small seeded PRNG (mulberry32) so the "random" results below are
-// reproducible: the same seed always produces the same sequence of game
-// outcomes, so the expected pairings in each round are stable.
-function mulberry32(seed: number): () => number {
-  let a = seed
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
 const SEED = 20260917
-
-// Decides one game's result: 60% the higher-rated player wins, 25% draw,
-// 15% the lower-rated player wins. Returns history entries for both sides.
-function playGame(
-  rng: () => number,
-  round: number,
-  whiteUscfId: string,
-  blackUscfId: string,
-): RoundHistoryEntry[] {
-  const whiteRating = ratingOf.get(whiteUscfId) ?? 0
-  const blackRating = ratingOf.get(blackUscfId) ?? 0
-  const higherIsWhite = whiteRating >= blackRating
-  const roll = rng()
-
-  let whitePoints: number
-  if (roll < 0.6) {
-    whitePoints = higherIsWhite ? 1 : 0
-  } else if (roll < 0.85) {
-    whitePoints = 0.5
-  } else {
-    whitePoints = higherIsWhite ? 0 : 1
-  }
-
-  return [
-    game({
-      round,
-      uscfId: whiteUscfId,
-      opponentUscfId: blackUscfId,
-      color: 'white',
-      points: whitePoints,
-    }),
-    game({
-      round,
-      uscfId: blackUscfId,
-      opponentUscfId: whiteUscfId,
-      color: 'black',
-      points: 1 - whitePoints,
-    }),
-  ]
-}
-
-// Plays every board of a round (a bye, if any, earns a full point with no
-// color/opponent) and returns the round's history entries.
-function playRound(
-  rng: () => number,
-  round: number,
-  results: PairingResult[],
-): RoundHistoryEntry[] {
-  const entries: RoundHistoryEntry[] = []
-  for (const r of results) {
-    if (r.whiteEntryId === null || r.blackEntryId === null) {
-      const byeId = r.whiteEntryId ?? r.blackEntryId
-      entries.push(
-        game({round, uscfId: String(byeId), opponentUscfId: null, color: null, points: 1}),
-      )
-      continue
-    }
-    entries.push(...playGame(rng, round, String(r.whiteEntryId), String(r.blackEntryId)))
-  }
-  return entries
-}
-
-// Replays every round up to (but not including) the round being paired,
-// from a fresh RNG each time, so a test's result never depends on how many
-// random draws an earlier test in this file happened to make.
-function historyThroughRound(roundsSoFar: PairingResult[][]): RoundHistoryEntry[] {
-  const rng = mulberry32(SEED)
-  return roundsSoFar.flatMap((results, index) => playRound(rng, index + 1, results))
-}
 
 describe('SwissEngine: eight-player, three-round tournament with randomized results', () => {
   it('round 1: no standings yet, so one score group paired by rating (top half vs bottom half)', () => {
@@ -139,7 +58,7 @@ describe('SwissEngine: eight-player, three-round tournament with randomized resu
       {board: 3, whiteEntryId: 3, blackEntryId: 7},
       {board: 4, whiteEntryId: 8, blackEntryId: 4},
     ]
-    const history = historyThroughRound([round1])
+    const history = historyThroughRound(SEED, ratingOf, [round1])
 
     const engine = new SwissEngine()
     const results = engine.pair(players, {higherSeedColor: 'white', history})
@@ -170,7 +89,7 @@ describe('SwissEngine: eight-player, three-round tournament with randomized resu
       {board: 3, whiteEntryId: 5, blackEntryId: 6},
       {board: 4, whiteEntryId: 7, blackEntryId: 8},
     ]
-    const history = historyThroughRound([round1, round2])
+    const history = historyThroughRound(SEED, ratingOf, [round1, round2])
 
     // Round 2 results (seeded RNG): Player 3 beat Player 2, Player 1 and
     // Player 4 drew, Player 5 beat Player 6, Player 7 and Player 8 drew.
