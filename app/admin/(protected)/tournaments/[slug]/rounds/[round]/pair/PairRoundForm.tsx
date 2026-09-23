@@ -87,7 +87,7 @@ export function PairRoundForm({
   }
 
   return (
-    <div className="card bg-base-200 w-full max-w-md p-4 shadow sm:p-6">
+    <div className="card bg-base-200 w-full max-w-md p-4 shadow sm:max-w-none sm:p-6">
       <label className="fieldset-label mb-2">Pairing engine:</label>
       <div className="mb-4 flex flex-col gap-2">
         <label className="flex items-center gap-2">
