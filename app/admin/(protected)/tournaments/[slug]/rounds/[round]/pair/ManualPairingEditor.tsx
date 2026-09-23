@@ -28,14 +28,12 @@ export function ManualPairingEditor({
   round,
   entries,
   previousOpponents,
-  alreadyPaired,
 }: {
   slug: string
   round: number
   entries: ManualEntry[]
   // uscfId -> uscfIds of prior-round opponents, used for rematch warnings
   previousOpponents: Record<string, string[]>
-  alreadyPaired: boolean
 }) {
   const [rows, setRows] = useState<Row[]>([])
   const [pending, startTransition] = useTransition()
@@ -131,13 +129,6 @@ export function ManualPairingEditor({
       }
     }
 
-    if (alreadyPaired) {
-      const ok = window.confirm(
-        'This round is already paired. Saving will delete its existing pairings and results. Continue?',
-      )
-      if (!ok) return
-    }
-
     const sheets = rows.map((row) =>
       row.kind === 'bye'
         ? {whiteEntryId: row.entryId, blackEntryId: null}
@@ -146,14 +137,11 @@ export function ManualPairingEditor({
 
     startTransition(async () => {
       try {
-        const result = await saveManualPairings(slug, round, sheets, {
-          overwrite: alreadyPaired,
-        })
+        const result = await saveManualPairings(slug, round, sheets)
         if (result?.warnings?.length) {
           const ok = window.confirm(`${result.warnings.join('\n')}\n\nSave anyway?`)
           if (!ok) return
           await saveManualPairings(slug, round, sheets, {
-            overwrite: alreadyPaired,
             confirmWarnings: true,
           })
         }

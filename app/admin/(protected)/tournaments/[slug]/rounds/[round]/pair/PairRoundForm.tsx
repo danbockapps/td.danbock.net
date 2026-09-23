@@ -1,10 +1,6 @@
 'use client'
 
-import {
-  pairRound,
-  repairRound,
-  unpairRound,
-} from '@/app/admin/(protected)/tournaments/[slug]/actions'
+import {pairRound, unpairRound} from '@/app/admin/(protected)/tournaments/[slug]/actions'
 import {PairingList, type PairingListItem} from '@/components/pairings/PairingList'
 import {useRouter} from 'next/navigation'
 import {useState, useTransition} from 'react'
@@ -36,16 +32,12 @@ export function PairRoundForm({
   } | null>(null)
   const router = useRouter()
 
-  function submit(repair: boolean) {
+  function submit() {
     setError(null)
     setPreview(null)
     startTransition(async () => {
       try {
-        if (repair) {
-          await repairRound(slug, round, {higherSeedColor, engine, swissThreshold})
-        } else {
-          await pairRound(slug, round, {higherSeedColor, engine, swissThreshold})
-        }
+        await pairRound(slug, round, {higherSeedColor, engine, swissThreshold})
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
@@ -84,6 +76,25 @@ export function PairRoundForm({
         setError(e instanceof Error ? e.message : 'Something went wrong')
       }
     })
+  }
+
+  if (alreadyPaired) {
+    return (
+      <div className="card bg-base-200 w-full max-w-md p-4 shadow sm:max-w-none sm:p-6">
+        {error && <p className="mb-4 text-sm text-error">{error}</p>}
+        <p className="mb-2 text-sm text-base-content/60">
+          This round is already paired. Un-pair the round to make changes. Un-pairing deletes all
+          existing pairings and results for this round.
+        </p>
+        <button
+          className="btn btn-outline btn-error w-full sm:w-auto"
+          disabled={pending}
+          onClick={submitUnpair}
+        >
+          {pending ? 'Working…' : 'Un-pair round'}
+        </button>
+      </div>
+    )
   }
 
   return (
@@ -148,7 +159,6 @@ export function PairRoundForm({
           round={round}
           entries={entries}
           previousOpponents={previousOpponents}
-          alreadyPaired={alreadyPaired}
         />
       ) : (
         <>
@@ -198,9 +208,9 @@ export function PairRoundForm({
             <button
               className="btn btn-primary w-full sm:w-auto"
               disabled={pending}
-              onClick={() => submit(alreadyPaired)}
+              onClick={() => submit()}
             >
-              {pending ? 'Pairing…' : alreadyPaired ? 'Re-pair round' : 'Pair round'}
+              {pending ? 'Pairing…' : 'Pair round'}
             </button>
             <button
               className="btn btn-outline w-full sm:w-auto"
@@ -210,21 +220,6 @@ export function PairRoundForm({
               {pending ? 'Working…' : 'Dry run'}
             </button>
           </div>
-          {alreadyPaired && (
-            <>
-              <button
-                className="btn btn-error mt-2 w-full sm:w-auto"
-                disabled={pending}
-                onClick={submitUnpair}
-              >
-                {pending ? 'Working…' : 'Un-pair round'}
-              </button>
-              <p className="mt-2 text-xs text-base-content/60">
-                This round is already paired. Re-pairing or un-pairing deletes existing pairings and
-                results for this round.
-              </p>
-            </>
-          )}
 
           {preview && (
             <div className="mt-6">
