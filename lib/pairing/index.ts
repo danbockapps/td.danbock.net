@@ -26,7 +26,11 @@ const engines: Record<string, (config?: PairingEngineConfig) => PairingEngine> =
   ratingOrder: () => new RatingOrderEngine(),
   ratingDiffMinimizer: () => new RatingDiffMinimizerEngine(),
   swiss: () => new SwissEngine({debug: process.env.LOG_LEVEL === '1'}),
-  swissHybrid: (config) => new SwissThresholdHybridEngine({threshold: config?.swissThreshold ?? 0}),
+  swissHybrid: (config) =>
+    new SwissThresholdHybridEngine({
+      threshold: config?.swissThreshold ?? 0,
+      debug: process.env.LOG_LEVEL === '1',
+    }),
 }
 
 export function getPairingEngine(
