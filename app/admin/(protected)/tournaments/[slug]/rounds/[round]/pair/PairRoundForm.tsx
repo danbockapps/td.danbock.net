@@ -82,9 +82,9 @@ export function PairRoundForm({
   }
 
   return (
-    <div className="card bg-base-200 max-w-md p-6 shadow">
+    <div className="card bg-base-200 w-full max-w-md p-4 shadow sm:p-6">
       <label className="fieldset-label mb-2">Higher seed plays:</label>
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-wrap gap-4">
         <label className="flex items-center gap-2">
           <input
             type="radio"
@@ -108,7 +108,7 @@ export function PairRoundForm({
       </div>
 
       <label className="fieldset-label mb-2">Pairing engine:</label>
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-col gap-2">
         <label className="flex items-center gap-2">
           <input
             type="radio"
@@ -169,21 +169,29 @@ export function PairRoundForm({
 
       {error && <p className="mb-4 text-sm text-error">{error}</p>}
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <button
-          className="btn btn-primary"
+          className="btn btn-primary w-full sm:w-auto"
           disabled={pending}
           onClick={() => submit(alreadyPaired)}
         >
           {pending ? 'Pairing…' : alreadyPaired ? 'Re-pair round' : 'Pair round'}
         </button>
-        <button className="btn btn-outline" disabled={pending} onClick={submitDryRun}>
+        <button
+          className="btn btn-outline w-full sm:w-auto"
+          disabled={pending}
+          onClick={submitDryRun}
+        >
           {pending ? 'Working…' : 'Dry run'}
         </button>
       </div>
       {alreadyPaired && (
         <>
-          <button className="btn btn-error mt-2" disabled={pending} onClick={submitUnpair}>
+          <button
+            className="btn btn-error mt-2 w-full sm:w-auto"
+            disabled={pending}
+            onClick={submitUnpair}
+          >
             {pending ? 'Working…' : 'Un-pair round'}
           </button>
           <p className="mt-2 text-xs text-base-content/60">

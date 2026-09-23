@@ -11,32 +11,65 @@ export interface PairingListItem {
 
 function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showRound: boolean}) {
   return (
-    <table className="table">
-      <thead>
-        <tr>
-          {showRound && <th>Round</th>}
-          <th>Board</th>
-          <th>White</th>
-          <th>Black</th>
-          <th>Result</th>
-        </tr>
-      </thead>
-      <tbody>
+    <>
+      {/* Card layout on small screens */}
+      <div className="flex flex-col gap-2 sm:hidden">
         {pairings.map((p, i) => (
-          <tr
+          <div
             key={`${p.round ?? 0}-${p.board}-${i}`}
-            className={styles.rowIn}
+            className={`${styles.rowIn} card bg-base-100 border border-base-300 p-3`}
             style={{animationDelay: `${Math.min(i, 12) * 220}ms`}}
           >
-            {showRound && <td>{p.round}</td>}
-            <td>{p.board}</td>
-            <td>{p.white ? `${p.white.name} (${formatRating(p.white.rating)})` : 'Bye'}</td>
-            <td>{p.black ? `${p.black.name} (${formatRating(p.black.rating)})` : 'Bye'}</td>
-            <td>{formatResult(p.outcome)}</td>
-          </tr>
+            <div className="mb-1 flex items-center justify-between text-xs text-base-content/60">
+              <span>
+                {showRound && p.round != null ? `Round ${p.round} · ` : ''}Board {p.board}
+              </span>
+              <span>{formatResult(p.outcome)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate">
+                {p.white ? `${p.white.name} (${formatRating(p.white.rating)})` : 'Bye'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate">
+                {p.black ? `${p.black.name} (${formatRating(p.black.rating)})` : 'Bye'}
+              </span>
+            </div>
+          </div>
         ))}
-      </tbody>
-    </table>
+      </div>
+
+      {/* Table layout on larger screens */}
+      <div className="hidden sm:block">
+        <table className="table">
+          <thead>
+            <tr>
+              {showRound && <th>Round</th>}
+              <th>Board</th>
+              <th>White</th>
+              <th>Black</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pairings.map((p, i) => (
+              <tr
+                key={`${p.round ?? 0}-${p.board}-${i}`}
+                className={styles.rowIn}
+                style={{animationDelay: `${Math.min(i, 12) * 220}ms`}}
+              >
+                {showRound && <td>{p.round}</td>}
+                <td>{p.board}</td>
+                <td>{p.white ? `${p.white.name} (${formatRating(p.white.rating)})` : 'Bye'}</td>
+                <td>{p.black ? `${p.black.name} (${formatRating(p.black.rating)})` : 'Bye'}</td>
+                <td>{formatResult(p.outcome)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 

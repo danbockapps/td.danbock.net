@@ -22,8 +22,8 @@ export default async function PairRoundPage({
   })
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="mb-6 text-2xl font-bold">
+    <div className="mx-auto max-w-3xl px-4 sm:px-0">
+      <h1 className="mb-6 text-xl font-bold sm:text-2xl">
         Pair Round {round} — {tournament.name}
       </h1>
 
