@@ -98,6 +98,18 @@ async function buildHistory(tournamentId: number, round: number): Promise<RoundH
   })
 }
 
+export async function addRound(slug: string) {
+  const tournament = await requireTournament(slug)
+
+  await db
+    .update(tournaments)
+    .set({numRounds: tournament.numRounds + 1})
+    .where(eq(tournaments.id, tournament.id))
+
+  revalidatePath(`/admin/tournaments/${slug}`)
+  revalidatePath('/t')
+}
+
 export async function pairRound(
   slug: string,
   round: number,

@@ -1,6 +1,7 @@
 import {db} from '@/db'
 import {entries as entriesTable, pairings as pairingsTable} from '@/db/schema'
 import {getTournamentOrNotFound} from '@/lib/tournament'
+import {addRound} from './actions'
 import {and, eq} from 'drizzle-orm'
 import Link from 'next/link'
 
@@ -46,6 +47,11 @@ export default async function TournamentAdminPage({params}: {params: Promise<{sl
         <Link href={`/t/${slug}/entries`} className="btn btn-sm" target="_blank">
           View entries
         </Link>
+        <form action={addRound.bind(null, slug)}>
+          <button type="submit" className="btn btn-sm">
+            Add round
+          </button>
+        </form>
       </div>
 
       <div className="hidden overflow-x-auto md:block">
