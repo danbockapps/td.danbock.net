@@ -57,16 +57,6 @@ export default async function PairRoundPage({
         Pair Round {round} — {tournament.name}
       </h1>
 
-      <div className="mb-6">
-        <PairRoundForm
-          slug={slug}
-          round={round}
-          alreadyPaired={existingPairings.length > 0}
-          entries={manualEntries}
-          previousOpponents={previousOpponents}
-        />
-      </div>
-
       {existingPairings.length > 0 && (
         <>
           <h2 className="mb-2 text-lg font-semibold">Current pairings</h2>
@@ -92,6 +82,16 @@ export default async function PairRoundPage({
           />
         </>
       )}
+
+      <div className={existingPairings.length > 0 ? 'mt-6' : ''}>
+        <PairRoundForm
+          slug={slug}
+          round={round}
+          alreadyPaired={existingPairings.length > 0}
+          entries={manualEntries}
+          previousOpponents={previousOpponents}
+        />
+      </div>
     </div>
   )
 }
