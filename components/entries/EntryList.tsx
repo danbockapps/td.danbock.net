@@ -6,9 +6,13 @@ export interface EntryListItem {
   name: string
   uscfId: string
   rating: number | null
+  points?: number
 }
 
-function byRatingDesc(a: EntryListItem, b: EntryListItem) {
+function byPointsThenRatingDesc(a: EntryListItem, b: EntryListItem) {
+  const pointsDiff = (b.points ?? 0) - (a.points ?? 0)
+  if (pointsDiff !== 0) return pointsDiff
+
   if (a.rating === b.rating) return 0
   if (a.rating === null) return 1
   if (b.rating === null) return -1
@@ -33,6 +37,7 @@ function EntryTable({
           <th>Name</th>
           <th>USCF ID</th>
           <th>Rating</th>
+          <th>Points</th>
         </tr>
       </thead>
       <tbody>
@@ -46,6 +51,7 @@ function EntryTable({
             <td>{e.name}</td>
             <td>{e.uscfId}</td>
             <td>{formatRating(e.rating)}</td>
+            <td>{e.points ?? 0}</td>
           </tr>
         ))}
       </tbody>
@@ -70,7 +76,7 @@ export function EntryList({
     return (
       <div>
         <EntryTable
-          entries={[...entries].sort(byRatingDesc)}
+          entries={[...entries].sort(byPointsThenRatingDesc)}
           showRound={false}
           newNames={newNames}
         />
@@ -88,7 +94,7 @@ export function EntryList({
         <div key={round}>
           <h3 className="mb-2 font-semibold">Round {round}</h3>
           <EntryTable
-            entries={entries.filter((e) => e.round === round).sort(byRatingDesc)}
+            entries={entries.filter((e) => e.round === round).sort(byPointsThenRatingDesc)}
             showRound={false}
             newNames={newNames}
           />

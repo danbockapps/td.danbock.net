@@ -3,39 +3,10 @@
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
-import {upsertResult, type ResultOutcome} from '@/lib/results'
+import {outcomeToPoints, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
-
-// This whole function exists to translate the `results.outcome` enum (stored
-// relative to color) into a per-player point value. If results stored
-// whitePoints/blackPoints directly, this conversion — and the risk of a
-// caller forgetting to do it (see the round-2-scores-all-zero bug this fixed) —
-// would go away. Also, `history` here is rebuilt from scratch on every
-// pairRound call by re-joining pairings+results for every prior round; a
-// denormalized per-entry running score (updated when a result is entered)
-// would avoid recomputation and make this a plain lookup.
-function outcomeToPoints(
-  outcome: ResultOutcome | undefined,
-  side: 'white' | 'black',
-): number | undefined {
-  if (!outcome) return undefined
-  switch (outcome) {
-    case 'white':
-      return side === 'white' ? 1 : 0
-    case 'black':
-      return side === 'black' ? 1 : 0
-    case 'draw':
-      return 0.5
-    case 'white_forfeit':
-      return side === 'white' ? 0 : 1
-    case 'black_forfeit':
-      return side === 'black' ? 0 : 1
-    case 'double_forfeit':
-      return 0
-  }
-}
 
 async function requireTournament(slug: string) {
   const tournament = await db.query.tournaments.findFirst({

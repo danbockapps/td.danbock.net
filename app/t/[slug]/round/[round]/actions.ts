@@ -2,7 +2,7 @@
 
 import {db} from '@/db'
 import {entries, pairings, tournaments} from '@/db/schema'
-import {RESULT_OUTCOMES, upsertResult, type ResultOutcome} from '@/lib/results'
+import {getPointsByUscfId, RESULT_OUTCOMES, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {getUscfLookup} from '@/lib/uscf'
 import {and, eq, or} from 'drizzle-orm'
@@ -45,10 +45,20 @@ export async function getRoundEntries(slug: string, round: number) {
   const tournament = await findTournamentBySlug(slug)
   if (!tournament) return {error: 'Tournament not found'}
 
-  const roundEntries = await db.query.entries.findMany({
-    where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
-  })
-  return {data: roundEntries.map((e) => ({name: e.name, uscfId: e.uscfId, rating: e.rating}))}
+  const [roundEntries, points] = await Promise.all([
+    db.query.entries.findMany({
+      where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
+    }),
+    getPointsByUscfId(tournament.id),
+  ])
+  return {
+    data: roundEntries.map((e) => ({
+      name: e.name,
+      uscfId: e.uscfId,
+      rating: e.rating,
+      points: points.get(e.uscfId) ?? 0,
+    })),
+  }
 }
 
 export async function getRoundPairings(slug: string, round: number) {
