@@ -15,12 +15,24 @@ function formatPlayer(player: {name: string; rating: number | null; points?: num
   return `${player.name} (${formatRating(player.rating)}${points})`
 }
 
+function isBye(p: PairingListItem): boolean {
+  return p.white === null || p.black === null
+}
+
+// Byes aren't assigned a board, so they're sorted to the bottom of the sheet
+// and shown without a board number, regardless of what order the engine
+// returned them in.
+function sortWithByesLast(pairings: PairingListItem[]): PairingListItem[] {
+  return [...pairings].sort((a, b) => Number(isBye(a)) - Number(isBye(b)))
+}
+
 function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showRound: boolean}) {
+  const ordered = sortWithByesLast(pairings)
   return (
     <>
       {/* Card layout on small screens */}
       <div className="flex flex-col gap-2 sm:hidden">
-        {pairings.map((p, i) => (
+        {ordered.map((p, i) => (
           <div
             key={`${p.round ?? 0}-${p.board}-${i}`}
             className={`${styles.rowIn} card bg-base-100 border border-base-300 p-3`}
@@ -28,7 +40,8 @@ function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showR
           >
             <div className="mb-1 flex items-center justify-between text-xs text-base-content/60">
               <span>
-                {showRound && p.round != null ? `Round ${p.round} · ` : ''}Board {p.board}
+                {showRound && p.round != null ? `Round ${p.round} · ` : ''}
+                {isBye(p) ? 'Bye' : `Board ${p.board}`}
               </span>
               <span>{formatResult(p.outcome)}</span>
             </div>
@@ -55,14 +68,14 @@ function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showR
             </tr>
           </thead>
           <tbody>
-            {pairings.map((p, i) => (
+            {ordered.map((p, i) => (
               <tr
                 key={`${p.round ?? 0}-${p.board}-${i}`}
                 className={styles.rowIn}
                 style={{animationDelay: `${Math.min(i, 12) * 220}ms`}}
               >
                 {showRound && <td>{p.round}</td>}
-                <td>{p.board}</td>
+                <td>{isBye(p) ? '—' : p.board}</td>
                 <td>{formatPlayer(p.white)}</td>
                 <td>{formatPlayer(p.black)}</td>
                 <td>{formatResult(p.outcome)}</td>
