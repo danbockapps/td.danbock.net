@@ -1,11 +1,9 @@
 @keyframes entry-row-in {
   from {
-    transform: translateX(50rem);
-    background-color: var(--color-success);
+    transform: translateX(14rem);
   }
   to {
     transform: translateX(0);
-    background-color: var(--color-success);
   }
 }
 
