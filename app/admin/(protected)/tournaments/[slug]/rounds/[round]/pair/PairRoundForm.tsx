@@ -19,9 +19,10 @@ export function PairRoundForm({
   alreadyPaired: boolean
 }) {
   const [higherSeedColor, setHigherSeedColor] = useState<'white' | 'black'>('white')
-  const [engine, setEngine] = useState<'ratingOrder' | 'ratingDiffMinimizer' | 'swiss'>(
-    'ratingDiffMinimizer',
-  )
+  const [engine, setEngine] = useState<
+    'ratingOrder' | 'ratingDiffMinimizer' | 'swiss' | 'swissHybrid'
+  >('ratingDiffMinimizer')
+  const [swissThreshold, setSwissThreshold] = useState(1)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<{
@@ -36,9 +37,9 @@ export function PairRoundForm({
     startTransition(async () => {
       try {
         if (repair) {
-          await repairRound(slug, round, {higherSeedColor, engine})
+          await repairRound(slug, round, {higherSeedColor, engine, swissThreshold})
         } else {
-          await pairRound(slug, round, {higherSeedColor, engine})
+          await pairRound(slug, round, {higherSeedColor, engine, swissThreshold})
         }
         router.refresh()
       } catch (e) {
@@ -51,7 +52,12 @@ export function PairRoundForm({
     setError(null)
     startTransition(async () => {
       try {
-        const result = await pairRound(slug, round, {higherSeedColor, engine, dryRun: true})
+        const result = await pairRound(slug, round, {
+          higherSeedColor,
+          engine,
+          swissThreshold,
+          dryRun: true,
+        })
         setPreview(result ?? {best: [], alternatives: []})
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Something went wrong')
@@ -133,7 +139,33 @@ export function PairRoundForm({
           />
           Swiss
         </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="radio"
+            name="engine"
+            className="radio"
+            checked={engine === 'swissHybrid'}
+            onChange={() => setEngine('swissHybrid')}
+          />
+          Swiss / rating hybrid
+        </label>
       </div>
+
+      {engine === 'swissHybrid' && (
+        <div className="mb-4">
+          <label className="fieldset-label mb-2">
+            Points within the leader that still require a Swiss pairing:
+          </label>
+          <input
+            type="number"
+            min={0}
+            step={0.5}
+            className="input input-bordered w-24"
+            value={swissThreshold}
+            onChange={(e) => setSwissThreshold(Number(e.target.value))}
+          />
+        </div>
+      )}
 
       {error && <p className="mb-4 text-sm text-error">{error}</p>}
 

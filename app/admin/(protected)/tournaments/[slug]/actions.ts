@@ -100,7 +100,12 @@ export async function deleteEntry(tournamentId: number, uscfId: string, round: n
 export async function pairRound(
   slug: string,
   round: number,
-  options: {higherSeedColor: 'white' | 'black'; engine?: string; dryRun?: boolean},
+  options: {
+    higherSeedColor: 'white' | 'black'
+    engine?: string
+    swissThreshold?: number
+    dryRun?: boolean
+  },
 ) {
   const tournament = await requireTournament(slug)
 
@@ -144,7 +149,7 @@ export async function pairRound(
     return rows
   })
 
-  const engine = getPairingEngine(options.engine)
+  const engine = getPairingEngine(options.engine, {swissThreshold: options.swissThreshold})
   const engineEntries = roundEntries.map((e) => ({
     entryId: e.id,
     uscfId: e.uscfId,
@@ -213,7 +218,7 @@ async function deleteRoundPairings(tournamentId: number, round: number) {
 export async function repairRound(
   slug: string,
   round: number,
-  options: {higherSeedColor: 'white' | 'black'; engine?: string},
+  options: {higherSeedColor: 'white' | 'black'; engine?: string; swissThreshold?: number},
 ) {
   const tournament = await requireTournament(slug)
   await deleteRoundPairings(tournament.id, round)
