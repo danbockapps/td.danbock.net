@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM node:26-slim AS base
 
 # Node 26's image no longer bundles Corepack/Yarn
@@ -8,7 +9,8 @@ FROM base AS deps
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN --mount=type=cache,target=/usr/local/share/.cache/yarn \
+  yarn install --frozen-lockfile
 
 # ---- Build ----
 FROM base AS builder
