@@ -118,7 +118,7 @@ export function ManualPairingEditor({
     const row = rows[index]
     const otherId =
       row.kind === 'pairing' ? (side === 'white' ? row.blackEntryId : row.whiteEntryId) : null
-    return entries.filter((e) => !blocked.has(e.id) || e.id === otherId)
+    return entries.filter((e) => !blocked.has(e.id) && e.id !== otherId)
   }
 
   function save() {

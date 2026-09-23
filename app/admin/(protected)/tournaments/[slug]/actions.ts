@@ -210,6 +210,9 @@ export async function saveManualPairings(
     if (sheet.whiteEntryId === null && sheet.blackEntryId === null) {
       throw new Error(`Row ${i + 1} has no players`)
     }
+    if (sheet.whiteEntryId !== null && sheet.whiteEntryId === sheet.blackEntryId) {
+      throw new Error(`Row ${i + 1} pairs a player against herself`)
+    }
     for (const id of [sheet.whiteEntryId, sheet.blackEntryId]) {
       if (id === null) continue
       if (!entriesById.has(id)) throw new Error('A pairing includes a player not in this round')
