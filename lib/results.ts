@@ -44,8 +44,11 @@ export function outcomeToPoints(
 }
 
 // Total points for each player (keyed by USCF ID) across all completed
-// pairings in a tournament.
-export async function getPointsByUscfId(tournamentId: number): Promise<Map<string, number>> {
+// pairings in a tournament, optionally only counting rounds before `beforeRound`.
+export async function getPointsByUscfId(
+  tournamentId: number,
+  beforeRound?: number,
+): Promise<Map<string, number>> {
   const tournamentPairings = await db.query.pairings.findMany({
     where: eq(pairings.tournamentId, tournamentId),
     with: {white: true, black: true, result: true},
@@ -53,6 +56,7 @@ export async function getPointsByUscfId(tournamentId: number): Promise<Map<strin
 
   const points = new Map<string, number>()
   for (const p of tournamentPairings) {
+    if (beforeRound !== undefined && p.round >= beforeRound) continue
     const outcome = p.result?.outcome
     if (p.white) {
       const value = outcomeToPoints(outcome, 'white')

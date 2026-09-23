@@ -4,9 +4,15 @@ import styles from './PairingList.module.css'
 export interface PairingListItem {
   round?: number
   board: number
-  white: {name: string; rating: number | null} | null
-  black: {name: string; rating: number | null} | null
+  white: {name: string; rating: number | null; points?: number} | null
+  black: {name: string; rating: number | null; points?: number} | null
   outcome?: string | null
+}
+
+function formatPlayer(player: {name: string; rating: number | null; points?: number} | null) {
+  if (!player) return 'Bye'
+  const points = player.points !== undefined ? `, ${player.points} pts` : ''
+  return `${player.name} (${formatRating(player.rating)}${points})`
 }
 
 function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showRound: boolean}) {
@@ -27,14 +33,10 @@ function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showR
               <span>{formatResult(p.outcome)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate">
-                {p.white ? `${p.white.name} (${formatRating(p.white.rating)})` : 'Bye'}
-              </span>
+              <span className="truncate">{formatPlayer(p.white)}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate">
-                {p.black ? `${p.black.name} (${formatRating(p.black.rating)})` : 'Bye'}
-              </span>
+              <span className="truncate">{formatPlayer(p.black)}</span>
             </div>
           </div>
         ))}
@@ -61,8 +63,8 @@ function PairingTable({pairings, showRound}: {pairings: PairingListItem[]; showR
               >
                 {showRound && <td>{p.round}</td>}
                 <td>{p.board}</td>
-                <td>{p.white ? `${p.white.name} (${formatRating(p.white.rating)})` : 'Bye'}</td>
-                <td>{p.black ? `${p.black.name} (${formatRating(p.black.rating)})` : 'Bye'}</td>
+                <td>{formatPlayer(p.white)}</td>
+                <td>{formatPlayer(p.black)}</td>
                 <td>{formatResult(p.outcome)}</td>
               </tr>
             ))}

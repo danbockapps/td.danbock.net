@@ -3,7 +3,7 @@
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
-import {outcomeToPoints, upsertResult, type ResultOutcome} from '@/lib/results'
+import {getPointsByUscfId, outcomeToPoints, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
 import {and, eq, lt, or} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
@@ -146,12 +146,17 @@ export async function pairRound(
 
   if (options.dryRun) {
     const entriesById = new Map(roundEntries.map((e) => [e.id, e]))
+    const points = await getPointsByUscfId(tournament.id, round)
     const toPreview = (sheet: typeof pairingResults) =>
-      sheet.map((p) => ({
-        board: p.board,
-        white: p.whiteEntryId ? (entriesById.get(p.whiteEntryId) ?? null) : null,
-        black: p.blackEntryId ? (entriesById.get(p.blackEntryId) ?? null) : null,
-      }))
+      sheet.map((p) => {
+        const white = p.whiteEntryId ? (entriesById.get(p.whiteEntryId) ?? null) : null
+        const black = p.blackEntryId ? (entriesById.get(p.blackEntryId) ?? null) : null
+        return {
+          board: p.board,
+          white: white ? {...white, points: points.get(white.uscfId) ?? 0} : null,
+          black: black ? {...black, points: points.get(black.uscfId) ?? 0} : null,
+        }
+      })
 
     return {
       best: toPreview(pairingResults),

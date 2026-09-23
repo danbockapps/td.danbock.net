@@ -65,16 +65,23 @@ export async function getRoundPairings(slug: string, round: number) {
   const tournament = await findTournamentBySlug(slug)
   if (!tournament) return {error: 'Tournament not found'}
 
-  const roundPairings = await db.query.pairings.findMany({
-    where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
-    orderBy: (p, {asc}) => asc(p.board),
-    with: {white: true, black: true, result: true},
-  })
+  const [roundPairings, points] = await Promise.all([
+    db.query.pairings.findMany({
+      where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
+      orderBy: (p, {asc}) => asc(p.board),
+      with: {white: true, black: true, result: true},
+    }),
+    getPointsByUscfId(tournament.id, round),
+  ])
   return {
     data: roundPairings.map((p) => ({
       board: p.board,
-      white: p.white ? {name: p.white.name, rating: p.white.rating} : null,
-      black: p.black ? {name: p.black.name, rating: p.black.rating} : null,
+      white: p.white
+        ? {name: p.white.name, rating: p.white.rating, points: points.get(p.white.uscfId) ?? 0}
+        : null,
+      black: p.black
+        ? {name: p.black.name, rating: p.black.rating, points: points.get(p.black.uscfId) ?? 0}
+        : null,
       outcome: p.result?.outcome,
     })),
   }
