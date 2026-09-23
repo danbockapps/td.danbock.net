@@ -68,6 +68,36 @@ export async function deleteEntry(tournamentId: number, uscfId: string, round: n
   revalidatePath('/t')
 }
 
+async function buildHistory(tournamentId: number, round: number): Promise<RoundHistoryEntry[]> {
+  const priorPairings = await db.query.pairings.findMany({
+    where: and(eq(pairings.tournamentId, tournamentId), lt(pairings.round, round)),
+    with: {white: true, black: true, result: true},
+  })
+  return priorPairings.flatMap((p) => {
+    const rows: RoundHistoryEntry[] = []
+    const outcome = p.result?.outcome
+    if (p.white) {
+      rows.push({
+        round: p.round,
+        uscfId: p.white.uscfId,
+        opponentUscfId: p.black?.uscfId ?? null,
+        color: p.black ? 'white' : null,
+        points: outcomeToPoints(outcome, 'white'),
+      })
+    }
+    if (p.black) {
+      rows.push({
+        round: p.round,
+        uscfId: p.black.uscfId,
+        opponentUscfId: p.white?.uscfId ?? null,
+        color: p.white ? 'black' : null,
+        points: outcomeToPoints(outcome, 'black'),
+      })
+    }
+    return rows
+  })
+}
+
 export async function pairRound(
   slug: string,
   round: number,
@@ -92,33 +122,7 @@ export async function pairRound(
   })
   if (roundEntries.length === 0) throw new Error('No entries for this round yet')
 
-  const priorPairings = await db.query.pairings.findMany({
-    where: and(eq(pairings.tournamentId, tournament.id), lt(pairings.round, round)),
-    with: {white: true, black: true, result: true},
-  })
-  const history: RoundHistoryEntry[] = priorPairings.flatMap((p) => {
-    const rows: RoundHistoryEntry[] = []
-    const outcome = p.result?.outcome
-    if (p.white) {
-      rows.push({
-        round: p.round,
-        uscfId: p.white.uscfId,
-        opponentUscfId: p.black?.uscfId ?? null,
-        color: p.black ? 'white' : null,
-        points: outcomeToPoints(outcome, 'white'),
-      })
-    }
-    if (p.black) {
-      rows.push({
-        round: p.round,
-        uscfId: p.black.uscfId,
-        opponentUscfId: p.white?.uscfId ?? null,
-        color: p.white ? 'black' : null,
-        points: outcomeToPoints(outcome, 'black'),
-      })
-    }
-    return rows
-  })
+  const history = await buildHistory(tournament.id, round)
 
   const engine = getPairingEngine(options.engine, {swissThreshold: options.swissThreshold})
   const engineEntries = roundEntries.map((e) => ({
@@ -177,6 +181,88 @@ export async function pairRound(
   broadcastEntriesChanged(slug, round)
   revalidatePath(`/admin/tournaments/${slug}`)
   revalidatePath('/t')
+}
+
+export async function saveManualPairings(
+  slug: string,
+  round: number,
+  sheets: {whiteEntryId: number | null; blackEntryId: number | null}[],
+  options: {overwrite?: boolean; confirmWarnings?: boolean} = {},
+): Promise<{warnings?: string[]}> {
+  const tournament = await requireTournament(slug)
+
+  const roundEntries = await db.query.entries.findMany({
+    where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
+  })
+  if (roundEntries.length === 0) throw new Error('No entries for this round yet')
+  const entriesById = new Map(roundEntries.map((e) => [e.id, e]))
+
+  const existing = await db.query.pairings.findFirst({
+    where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
+  })
+  if (existing && !options.overwrite) {
+    throw new Error('This round has already been paired')
+  }
+
+  // Structural validation: no empty rows, no unknown or duplicated players.
+  const used = new Set<number>()
+  for (const [i, sheet] of sheets.entries()) {
+    if (sheet.whiteEntryId === null && sheet.blackEntryId === null) {
+      throw new Error(`Row ${i + 1} has no players`)
+    }
+    for (const id of [sheet.whiteEntryId, sheet.blackEntryId]) {
+      if (id === null) continue
+      if (!entriesById.has(id)) throw new Error('A pairing includes a player not in this round')
+      if (used.has(id)) throw new Error('A player appears in more than one pairing')
+      used.add(id)
+    }
+  }
+
+  // Warn (but allow) rematches and same-team pairings.
+  const history = await buildHistory(tournament.id, round)
+  const previousOpponents = new Map<string, Set<string>>()
+  for (const h of history) {
+    if (!h.opponentUscfId) continue
+    let opponents = previousOpponents.get(h.uscfId)
+    if (!opponents) previousOpponents.set(h.uscfId, (opponents = new Set()))
+    opponents.add(h.opponentUscfId)
+  }
+
+  const warnings: string[] = []
+  for (const [i, sheet] of sheets.entries()) {
+    const white = sheet.whiteEntryId ? entriesById.get(sheet.whiteEntryId) : null
+    const black = sheet.blackEntryId ? entriesById.get(sheet.blackEntryId) : null
+    if (!white || !black) continue
+    const label = `Board ${i + 1} (${white.name} vs ${black.name})`
+    if (white.team && black.team && white.team === black.team) {
+      warnings.push(`${label}: players are on the same team`)
+    }
+    if (previousOpponents.get(white.uscfId)?.has(black.uscfId)) {
+      warnings.push(`${label}: these players have already played each other`)
+    }
+  }
+
+  if (warnings.length > 0 && !options.confirmWarnings) {
+    return {warnings}
+  }
+
+  if (existing) await deleteRoundPairings(tournament.id, round)
+
+  await db.insert(pairings).values(
+    sheets.map((s, i) => ({
+      tournamentId: tournament.id,
+      round,
+      board: i + 1,
+      whiteEntryId: s.whiteEntryId,
+      blackEntryId: s.blackEntryId,
+    })),
+  )
+
+  broadcastEntriesChanged(slug, round)
+  revalidatePath(`/admin/tournaments/${slug}`)
+  revalidatePath('/t')
+
+  return {}
 }
 
 async function deleteRoundPairings(tournamentId: number, round: number) {

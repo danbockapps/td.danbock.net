@@ -1,9 +1,9 @@
 import {db} from '@/db'
-import {pairings} from '@/db/schema'
+import {entries, pairings} from '@/db/schema'
 import {PairingList} from '@/components/pairings/PairingList'
 import {getPointsByUscfId} from '@/lib/results'
 import {getTournamentOrNotFound} from '@/lib/tournament'
-import {and, eq} from 'drizzle-orm'
+import {and, eq, lt} from 'drizzle-orm'
 import {PairRoundForm} from './PairRoundForm'
 
 export default async function PairRoundPage({
@@ -16,14 +16,40 @@ export default async function PairRoundPage({
 
   const tournament = await getTournamentOrNotFound(slug)
 
-  const [existingPairings, points] = await Promise.all([
+  const [existingPairings, points, roundEntries, priorPairings] = await Promise.all([
     db.query.pairings.findMany({
       where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),
       orderBy: (p, {asc}) => asc(p.board),
       with: {white: true, black: true, result: true},
     }),
     getPointsByUscfId(tournament.id, round),
+    db.query.entries.findMany({
+      where: and(eq(entries.tournamentId, tournament.id), eq(entries.round, round)),
+    }),
+    db.query.pairings.findMany({
+      where: and(eq(pairings.tournamentId, tournament.id), lt(pairings.round, round)),
+      with: {white: true, black: true},
+    }),
   ])
+
+  const manualEntries = roundEntries
+    .map((e) => ({
+      id: e.id,
+      uscfId: e.uscfId,
+      name: e.name,
+      rating: e.rating,
+      team: e.team,
+      points: points.get(e.uscfId) ?? 0,
+    }))
+    .sort((a, b) => b.points - a.points || (b.rating ?? 0) - (a.rating ?? 0))
+
+  const previousOpponents: Record<string, string[]> = {}
+  for (const p of priorPairings) {
+    if (p.white && p.black) {
+      ;(previousOpponents[p.white.uscfId] ??= []).push(p.black.uscfId)
+      ;(previousOpponents[p.black.uscfId] ??= []).push(p.white.uscfId)
+    }
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-0">
@@ -32,7 +58,13 @@ export default async function PairRoundPage({
       </h1>
 
       <div className="mb-6">
-        <PairRoundForm slug={slug} round={round} alreadyPaired={existingPairings.length > 0} />
+        <PairRoundForm
+          slug={slug}
+          round={round}
+          alreadyPaired={existingPairings.length > 0}
+          entries={manualEntries}
+          previousOpponents={previousOpponents}
+        />
       </div>
 
       {existingPairings.length > 0 && (
