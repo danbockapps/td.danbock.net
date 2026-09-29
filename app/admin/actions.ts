@@ -1,7 +1,7 @@
 'use server'
 
 import {db} from '@/db'
-import {tournaments, users} from '@/db/schema'
+import {tournamentUsers, tournaments, users} from '@/db/schema'
 import {getCurrentUser, COOKIE_NAME} from '@/lib/auth/session'
 import {eq} from 'drizzle-orm'
 import {redirect} from 'next/navigation'
@@ -48,6 +48,11 @@ export async function createTournament(
     return {error: 'Number of rounds must be a positive integer'}
   }
 
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect('/admin/login')
+  }
+
   const existing = await db.query.tournaments.findFirst({
     where: (t, {eq}) => eq(t.slug, slug),
   })
@@ -55,7 +60,8 @@ export async function createTournament(
     return {error: 'A tournament with that slug already exists'}
   }
 
-  await db.insert(tournaments).values({slug, name, numRounds})
+  const [tournament] = await db.insert(tournaments).values({slug, name, numRounds}).returning()
+  await db.insert(tournamentUsers).values({tournamentId: tournament.id, userId: user.id})
 
   redirect(`/admin/tournaments/${slug}`)
 }
