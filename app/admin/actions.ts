@@ -2,29 +2,9 @@
 
 import {db} from '@/db'
 import {tournaments} from '@/db/schema'
-import {COOKIE_NAME, createSessionToken, verifyAdminPassword} from '@/lib/auth/session'
+import {COOKIE_NAME} from '@/lib/auth/session'
 import {redirect} from 'next/navigation'
 import {cookies} from 'next/headers'
-
-export async function login(_prevState: {error?: string} | undefined, formData: FormData) {
-  const password = String(formData.get('password') ?? '')
-
-  if (!verifyAdminPassword(password)) {
-    return {error: 'Incorrect password'}
-  }
-
-  const token = await createSessionToken()
-  const cookieStore = await cookies()
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7,
-  })
-
-  redirect('/admin')
-}
 
 export async function logout() {
   const cookieStore = await cookies()
