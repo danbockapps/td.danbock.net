@@ -1,8 +1,9 @@
 'use server'
 
 import {db} from '@/db'
-import {tournaments} from '@/db/schema'
-import {COOKIE_NAME} from '@/lib/auth/session'
+import {tournaments, users} from '@/db/schema'
+import {getCurrentUser, COOKIE_NAME} from '@/lib/auth/session'
+import {eq} from 'drizzle-orm'
 import {redirect} from 'next/navigation'
 import {cookies} from 'next/headers'
 
@@ -10,6 +11,23 @@ export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete(COOKIE_NAME)
   redirect('/admin/login')
+}
+
+export async function confirmEmail(_prevState: {error?: string} | undefined, formData: FormData) {
+  const email = String(formData.get('email') ?? '').trim()
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return {error: 'Enter a valid email address'}
+  }
+
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect('/admin/login')
+  }
+
+  await db.update(users).set({email}).where(eq(users.id, user.id))
+
+  redirect('/admin')
 }
 
 export async function createTournament(

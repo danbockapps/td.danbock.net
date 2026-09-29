@@ -9,6 +9,10 @@ export default async function ProtectedAdminLayout({children}: {children: React.
     redirect('/admin/login')
   }
 
+  if (!user.email) {
+    redirect('/admin/confirm-email')
+  }
+
   return (
     <div className="min-h-screen">
       <div className="navbar bg-base-200">

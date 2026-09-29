@@ -1,7 +1,7 @@
 import {db} from '@/db'
 import {users} from '@/db/schema'
 import {exchangeCodeForToken, fetchLichessAccount, fetchLichessEmail} from '@/lib/auth/lichess'
-import {STATE_COOKIE, VERIFIER_COOKIE} from '@/lib/auth/oauth-cookies'
+import {EMAIL_HINT_COOKIE, STATE_COOKIE, VERIFIER_COOKIE} from '@/lib/auth/oauth-cookies'
 import {COOKIE_NAME, createSessionToken} from '@/lib/auth/session'
 import {eq} from 'drizzle-orm'
 import {cookies} from 'next/headers'
@@ -37,18 +37,18 @@ export async function GET(request: NextRequest) {
   })
 
   let userId: number
+  let confirmedEmail: string | null
   if (existing) {
     userId = existing.id
-    await db
-      .update(users)
-      .set({username: account.username, email: existing.email ?? email ?? null})
-      .where(eq(users.id, existing.id))
+    confirmedEmail = existing.email
+    await db.update(users).set({username: account.username}).where(eq(users.id, existing.id))
   } else {
     const [inserted] = await db
       .insert(users)
-      .values({lichessId: account.id, username: account.username, email})
+      .values({lichessId: account.id, username: account.username, email: null})
       .returning()
     userId = inserted.id
+    confirmedEmail = null
   }
 
   const token = await createSessionToken(userId)
@@ -60,5 +60,19 @@ export async function GET(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 7,
   })
 
-  redirect('/admin')
+  if (confirmedEmail) {
+    redirect('/admin')
+  }
+
+  if (email) {
+    cookieStore.set(EMAIL_HINT_COOKIE, email, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 10,
+    })
+  }
+
+  redirect('/admin/confirm-email')
 }
