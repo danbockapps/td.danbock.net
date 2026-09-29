@@ -1,8 +1,9 @@
 'use server'
 
 import {db} from '@/db'
-import {entries, pairings, results, tournaments} from '@/db/schema'
+import {entries, pairings, results, tournamentUsers, tournaments, users} from '@/db/schema'
 import {requireTournamentAccess} from '@/lib/auth/authorize'
+import {lookupLichessUser} from '@/lib/auth/lichess'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
 import {getPointsByUscfId, outcomeToPoints, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
@@ -16,6 +17,50 @@ async function requireTournament(slug: string) {
   if (!tournament) throw new Error('Tournament not found')
   await requireTournamentAccess(tournament.id)
   return tournament
+}
+
+export async function inviteCollaborator(
+  slug: string,
+  _prevState: {error?: string} | undefined,
+  formData: FormData,
+) {
+  const username = String(formData.get('username') ?? '').trim()
+  if (!username) {
+    return {error: 'Enter a Lichess username'}
+  }
+
+  const tournament = await requireTournament(slug)
+
+  const lichessUser = await lookupLichessUser(username)
+  if (!lichessUser) {
+    return {error: `No Lichess user found with username "${username}"`}
+  }
+
+  let user = await db.query.users.findFirst({
+    where: eq(users.lichessId, lichessUser.id),
+  })
+  if (!user) {
+    const [inserted] = await db
+      .insert(users)
+      .values({lichessId: lichessUser.id, username: lichessUser.username, email: null})
+      .returning()
+    user = inserted
+  }
+
+  const existingAccess = await db.query.tournamentUsers.findFirst({
+    where: and(
+      eq(tournamentUsers.tournamentId, tournament.id),
+      eq(tournamentUsers.userId, user.id),
+    ),
+  })
+  if (existingAccess) {
+    return {error: `${lichessUser.username} already has access to this tournament`}
+  }
+
+  await db.insert(tournamentUsers).values({tournamentId: tournament.id, userId: user.id})
+
+  revalidatePath(`/admin/tournaments/${slug}`)
+  return {}
 }
 
 export async function updateEntry(

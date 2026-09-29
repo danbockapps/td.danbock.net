@@ -1,6 +1,7 @@
 import {db} from '@/db'
 import {entries as entriesTable, pairings as pairingsTable} from '@/db/schema'
 import {getTournamentForAdminOrNotFound} from '@/lib/tournament'
+import {InviteCollaboratorForm} from './InviteCollaboratorForm'
 import {addRound} from './actions'
 import {and, eq} from 'drizzle-orm'
 import Link from 'next/link'
@@ -9,6 +10,12 @@ export default async function TournamentAdminPage({params}: {params: Promise<{sl
   const {slug} = await params
 
   const tournament = await getTournamentForAdminOrNotFound(slug)
+
+  const collaborators = await db.query.tournamentUsers.findMany({
+    where: (tu, {eq}) => eq(tu.tournamentId, tournament.id),
+    with: {user: true},
+    orderBy: (tu, {asc}) => asc(tu.invitedAt),
+  })
 
   const rounds = Array.from({length: tournament.numRounds}, (_, i) => i + 1)
 
@@ -132,6 +139,18 @@ export default async function TournamentAdminPage({params}: {params: Promise<{sl
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-8">
+        <h2 className="mb-2 text-lg font-semibold">Collaborators</h2>
+        {collaborators.length > 0 && (
+          <ul className="mb-3 list-inside list-disc text-sm text-base-content/70">
+            {collaborators.map((c) => (
+              <li key={c.id}>{c.user.username}</li>
+            ))}
+          </ul>
+        )}
+        <InviteCollaboratorForm slug={slug} />
       </div>
     </div>
   )

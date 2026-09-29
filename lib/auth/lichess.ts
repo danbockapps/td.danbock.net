@@ -88,3 +88,14 @@ export async function fetchLichessEmail(accessToken: string): Promise<string | n
   const data = (await response.json()) as {email?: string}
   return data.email ?? null
 }
+
+export async function lookupLichessUser(
+  username: string,
+): Promise<{id: string; username: string} | null> {
+  const response = await fetch(`https://lichess.org/api/user/${encodeURIComponent(username)}`)
+
+  if (!response.ok) return null
+
+  const data = (await response.json()) as {id: string; username: string}
+  return {id: data.id, username: data.username}
+}
