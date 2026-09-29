@@ -1,0 +1,5 @@
+- A user will be able to log in to our site with their Lichess account
+- When logged in, they can create and mange tournaments
+- They can invite other users to co-manage their tournaments
+- Players generally won't log in. User accounts are for tournament directors, not players. Registering for a tournament rouund will stay the same, via QR code.
+- The "admin" concept as we know it will go away. There instead will be an admin boolean in the user table, and users with that set will have access to all tournaments.

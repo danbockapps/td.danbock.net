@@ -15,6 +15,13 @@
       "when": 1788295486870,
       "tag": "0001_spotty_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790720120599,
+      "tag": "0002_tearful_young_avengers",
+      "breakpoints": true
     }
   ]
 }

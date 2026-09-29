@@ -11,6 +11,36 @@ export const tournaments = sqliteTable('tournaments', {
     .$defaultFn(() => Date.now()),
 })
 
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({autoIncrement: true}),
+  lichessId: text('lichess_id').notNull().unique(),
+  username: text('username').notNull(),
+  email: text('email'),
+  admin: integer('admin', {mode: 'boolean'}).notNull().default(false),
+  createdAt: integer('created_at')
+    .notNull()
+    .$defaultFn(() => Date.now()),
+})
+
+export const tournamentUsers = sqliteTable(
+  'tournament_users',
+  {
+    id: integer('id').primaryKey({autoIncrement: true}),
+    tournamentId: integer('tournament_id')
+      .notNull()
+      .references(() => tournaments.id),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id),
+    invitedAt: integer('invited_at')
+      .notNull()
+      .$defaultFn(() => Date.now()),
+  },
+  (table) => [
+    unique('tournament_users_tournament_user_unique').on(table.tournamentId, table.userId),
+  ],
+)
+
 export const entries = sqliteTable(
   'entries',
   {
@@ -83,6 +113,22 @@ export const results = sqliteTable('results', {
 export const tournamentsRelations = relations(tournaments, ({many}) => ({
   entries: many(entries),
   pairings: many(pairings),
+  tournamentUsers: many(tournamentUsers),
+}))
+
+export const usersRelations = relations(users, ({many}) => ({
+  tournamentUsers: many(tournamentUsers),
+}))
+
+export const tournamentUsersRelations = relations(tournamentUsers, ({one}) => ({
+  tournament: one(tournaments, {
+    fields: [tournamentUsers.tournamentId],
+    references: [tournaments.id],
+  }),
+  user: one(users, {
+    fields: [tournamentUsers.userId],
+    references: [users.id],
+  }),
 }))
 
 export const entriesRelations = relations(entries, ({one}) => ({
