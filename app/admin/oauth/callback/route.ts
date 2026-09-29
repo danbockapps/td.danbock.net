@@ -1,5 +1,5 @@
 import {db} from '@/db'
-import {users} from '@/db/schema'
+import {tournamentUsers, users} from '@/db/schema'
 import {exchangeCodeForToken, fetchLichessAccount, fetchLichessEmail} from '@/lib/auth/lichess'
 import {EMAIL_HINT_COOKIE, STATE_COOKIE, VERIFIER_COOKIE} from '@/lib/auth/oauth-cookies'
 import {COOKIE_NAME, createSessionToken} from '@/lib/auth/session'
@@ -43,12 +43,28 @@ export async function GET(request: NextRequest) {
     confirmedEmail = existing.email
     await db.update(users).set({username: account.username}).where(eq(users.id, existing.id))
   } else {
+    const isFirstUser = (await db.query.users.findFirst()) === undefined
+
     const [inserted] = await db
       .insert(users)
-      .values({lichessId: account.id, username: account.username, email: null})
+      .values({
+        lichessId: account.id,
+        username: account.username,
+        email: null,
+        admin: isFirstUser,
+      })
       .returning()
     userId = inserted.id
     confirmedEmail = null
+
+    if (isFirstUser) {
+      const allTournaments = await db.query.tournaments.findMany()
+      if (allTournaments.length > 0) {
+        await db
+          .insert(tournamentUsers)
+          .values(allTournaments.map((t) => ({tournamentId: t.id, userId})))
+      }
+    }
   }
 
   const token = await createSessionToken(userId)
