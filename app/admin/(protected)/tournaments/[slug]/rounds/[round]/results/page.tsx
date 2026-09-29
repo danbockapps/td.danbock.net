@@ -1,6 +1,6 @@
 import {db} from '@/db'
 import {pairings} from '@/db/schema'
-import {getTournamentOrNotFound} from '@/lib/tournament'
+import {getTournamentForAdminOrNotFound} from '@/lib/tournament'
 import {and, eq} from 'drizzle-orm'
 import {ResultRow} from './ResultRow'
 
@@ -12,7 +12,7 @@ export default async function ResultsPage({
   const {slug, round: roundParam} = await params
   const round = Number(roundParam)
 
-  const tournament = await getTournamentOrNotFound(slug)
+  const tournament = await getTournamentForAdminOrNotFound(slug)
 
   const roundPairings = await db.query.pairings.findMany({
     where: and(eq(pairings.tournamentId, tournament.id), eq(pairings.round, round)),

@@ -2,7 +2,7 @@ import {db} from '@/db'
 import {entries, pairings} from '@/db/schema'
 import {PairingList} from '@/components/pairings/PairingList'
 import {getPointsByUscfId} from '@/lib/results'
-import {getTournamentOrNotFound} from '@/lib/tournament'
+import {getTournamentForAdminOrNotFound} from '@/lib/tournament'
 import {and, eq, lt} from 'drizzle-orm'
 import {PairRoundForm} from './PairRoundForm'
 
@@ -14,7 +14,7 @@ export default async function PairRoundPage({
   const {slug, round: roundParam} = await params
   const round = Number(roundParam)
 
-  const tournament = await getTournamentOrNotFound(slug)
+  const tournament = await getTournamentForAdminOrNotFound(slug)
 
   const [existingPairings, points, roundEntries, priorPairings] = await Promise.all([
     db.query.pairings.findMany({

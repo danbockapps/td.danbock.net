@@ -2,6 +2,7 @@
 
 import {db} from '@/db'
 import {entries, pairings, results, tournaments} from '@/db/schema'
+import {requireTournamentAccess} from '@/lib/auth/authorize'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
 import {getPointsByUscfId, outcomeToPoints, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
@@ -13,6 +14,7 @@ async function requireTournament(slug: string) {
     where: eq(tournaments.slug, slug),
   })
   if (!tournament) throw new Error('Tournament not found')
+  await requireTournamentAccess(tournament.id)
   return tournament
 }
 
@@ -21,6 +23,8 @@ export async function updateEntry(
   uscfId: string,
   data: {name: string; rating: number | null; team: string | null},
 ) {
+  await requireTournamentAccess(tournamentId)
+
   const [updated] = await db
     .update(entries)
     .set({name: data.name, rating: data.rating, team: data.team})
@@ -39,6 +43,8 @@ export async function updateEntry(
 }
 
 export async function deleteEntry(tournamentId: number, uscfId: string, round: number) {
+  await requireTournamentAccess(tournamentId)
+
   const entry = await db.query.entries.findFirst({
     where: and(
       eq(entries.tournamentId, tournamentId),
@@ -316,6 +322,8 @@ export async function submitResult(pairingId: number, outcome: string) {
     where: eq(pairings.id, pairingId),
     with: {tournament: true},
   })
+  if (!pairing) throw new Error('Pairing not found')
+  await requireTournamentAccess(pairing.tournamentId)
 
   if (!outcome) {
     await db.delete(results).where(eq(results.pairingId, pairingId))
@@ -323,7 +331,7 @@ export async function submitResult(pairingId: number, outcome: string) {
     await upsertResult(pairingId, outcome as ResultOutcome)
   }
 
-  if (pairing) broadcastResultsChanged(pairing.tournament.slug, pairing.round)
+  broadcastResultsChanged(pairing.tournament.slug, pairing.round)
 
   revalidatePath('/admin/tournaments')
   revalidatePath('/t')

@@ -1,6 +1,6 @@
 import {db} from '@/db'
 import {entries as entriesTable, pairings as pairingsTable} from '@/db/schema'
-import {getTournamentOrNotFound} from '@/lib/tournament'
+import {getTournamentForAdminOrNotFound} from '@/lib/tournament'
 import {addRound} from './actions'
 import {and, eq} from 'drizzle-orm'
 import Link from 'next/link'
@@ -8,7 +8,7 @@ import Link from 'next/link'
 export default async function TournamentAdminPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
 
-  const tournament = await getTournamentOrNotFound(slug)
+  const tournament = await getTournamentForAdminOrNotFound(slug)
 
   const rounds = Array.from({length: tournament.numRounds}, (_, i) => i + 1)
 

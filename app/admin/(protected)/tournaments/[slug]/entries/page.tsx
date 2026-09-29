@@ -1,13 +1,13 @@
 import {db} from '@/db'
 import {entries} from '@/db/schema'
-import {getTournamentOrNotFound} from '@/lib/tournament'
+import {getTournamentForAdminOrNotFound} from '@/lib/tournament'
 import {eq} from 'drizzle-orm'
 import {EntryEditCard, EntryEditRow} from './EntryEditRow'
 
 export default async function EditEntriesPage({params}: {params: Promise<{slug: string}>}) {
   const {slug} = await params
 
-  const tournament = await getTournamentOrNotFound(slug)
+  const tournament = await getTournamentForAdminOrNotFound(slug)
 
   const allEntries = await db.query.entries.findMany({
     where: eq(entries.tournamentId, tournament.id),
