@@ -12,3 +12,4 @@ docker stop td.danbock.net || true
 docker rm td.danbock.net || true
 
 "$(dirname "$0")/docker-run.sh"
+"$(dirname "$0")/check-prod.sh"
