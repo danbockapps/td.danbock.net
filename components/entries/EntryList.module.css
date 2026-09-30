@@ -8,5 +8,10 @@
 }
 
 .entryIn {
+  /*
+  This is slow because the user enters the tournament using their phone and the animation then
+  occurs not on the same screen but on the info screen, which is usually on a monitor on the wall.
+  10 seconds gives them time to change their focus from one screen to the other.
+  */
   animation: entry-row-in 10s ease-out;
 }
