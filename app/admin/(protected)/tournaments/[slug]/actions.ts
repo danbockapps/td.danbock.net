@@ -7,7 +7,7 @@ import {lookupLichessUser} from '@/lib/auth/lichess'
 import {getPairingEngine, type PairingResult, type RoundHistoryEntry} from '@/lib/pairing'
 import {getPointsByUscfId, outcomeToPoints, upsertResult, type ResultOutcome} from '@/lib/results'
 import {broadcastEntriesChanged, broadcastResultsChanged} from '@/lib/sse'
-import {and, eq, lt, or} from 'drizzle-orm'
+import {and, eq, lt, or, sql} from 'drizzle-orm'
 import {revalidatePath} from 'next/cache'
 
 async function requireTournament(slug: string) {
@@ -31,20 +31,26 @@ export async function inviteCollaborator(
 
   const tournament = await requireTournament(slug)
 
-  const lichessUser = await lookupLichessUser(username)
-  if (!lichessUser) {
-    return {error: `No Lichess user found with username "${username}"`}
-  }
-
   let user = await db.query.users.findFirst({
-    where: eq(users.lichessId, lichessUser.id),
+    where: sql`lower(${users.username}) = lower(${username})`,
   })
+
   if (!user) {
-    const [inserted] = await db
-      .insert(users)
-      .values({lichessId: lichessUser.id, username: lichessUser.username, email: null})
-      .returning()
-    user = inserted
+    const lichessUser = await lookupLichessUser(username)
+    if (!lichessUser) {
+      return {error: `No user found with username "${username}"`}
+    }
+
+    user = await db.query.users.findFirst({
+      where: eq(users.lichessId, lichessUser.id),
+    })
+    if (!user) {
+      const [inserted] = await db
+        .insert(users)
+        .values({lichessId: lichessUser.id, username: lichessUser.username, email: null})
+        .returning()
+      user = inserted
+    }
   }
 
   const existingAccess = await db.query.tournamentUsers.findFirst({
@@ -54,7 +60,7 @@ export async function inviteCollaborator(
     ),
   })
   if (existingAccess) {
-    return {error: `${lichessUser.username} already has access to this tournament`}
+    return {error: `${user.username} already has access to this tournament`}
   }
 
   await db.insert(tournamentUsers).values({tournamentId: tournament.id, userId: user.id})
