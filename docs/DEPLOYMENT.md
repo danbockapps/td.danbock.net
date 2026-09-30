@@ -8,13 +8,15 @@ The repo on the VPS lives at `~/projects/td.danbock.net/`. `scripts/docker-run.s
 
 Create `.env.production` in the repo root on the VPS (not checked in). Required:
 
-| Variable         | Purpose                                                              |
-| ---------------- | -------------------------------------------------------------------- |
-| `DATABASE_URL`   | SQLite file path inside the container. Set to `/app/data/td.sqlite`. |
-| `ADMIN_PASSWORD` | Password for admin access.                                           |
-| `SESSION_SECRET` | Secret used to sign session tokens.                                  |
+| Variable            | Purpose                                                                                                                                                          |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | SQLite file path inside the container. Set to `/app/data/td.sqlite`.                                                                                             |
+| `SESSION_SECRET`    | Secret used to sign session tokens.                                                                                                                              |
+| `LICHESS_CLIENT_ID` | OAuth client id sent to Lichess when logging in. Lichess doesn't register apps — any unique string works; use `https://td.danbock.net` (the app's own URL) here. |
 
 `NODE_ENV`, `PORT`, and `HOSTNAME` are baked into the Dockerfile — don't set them here.
+
+As of 2026-09-30, admin access is via "Log in with Lichess" (OAuth2 + PKCE), not a shared password. There's no app registration step on Lichess's side — `LICHESS_CLIENT_ID` is just a string you pick, and the OAuth redirect URI (`<origin>/admin/oauth/callback`) doesn't need to be pre-registered either. The first person to ever log in becomes an admin automatically and gains access to any tournaments that existed before accounts did; every tournament after that is only visible to its creator and anyone they invite as a collaborator (by Lichess username, from the tournament's admin page).
 
 ## First-time setup
 
