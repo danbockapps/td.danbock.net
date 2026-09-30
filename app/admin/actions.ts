@@ -2,6 +2,7 @@
 
 import {db} from '@/db'
 import {tournamentUsers, tournaments, users} from '@/db/schema'
+import {EMAIL_HINT_COOKIE} from '@/lib/auth/oauth-cookies'
 import {getCurrentUser, COOKIE_NAME} from '@/lib/auth/session'
 import {eq} from 'drizzle-orm'
 import {redirect} from 'next/navigation'
@@ -26,6 +27,9 @@ export async function confirmEmail(_prevState: {error?: string} | undefined, for
   }
 
   await db.update(users).set({email}).where(eq(users.id, user.id))
+
+  const cookieStore = await cookies()
+  cookieStore.delete(EMAIL_HINT_COOKIE)
 
   redirect('/admin')
 }

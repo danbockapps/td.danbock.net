@@ -15,7 +15,6 @@ export default async function ConfirmEmailPage() {
 
   const cookieStore = await cookies()
   const hint = cookieStore.get(EMAIL_HINT_COOKIE)?.value
-  cookieStore.delete(EMAIL_HINT_COOKIE)
 
   return (
     <div className="flex min-h-screen items-center justify-center">
