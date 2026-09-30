@@ -1,3 +1,4 @@
+import {oauthRedirectUri} from '@/lib/auth/redirect-uri'
 import {buildAuthorizeUrl, generateCodeVerifier, generateState} from '@/lib/auth/lichess'
 import {STATE_COOKIE, VERIFIER_COOKIE} from '@/lib/auth/oauth-cookies'
 import {cookies} from 'next/headers'
@@ -7,7 +8,7 @@ import {type NextRequest} from 'next/server'
 export async function GET(request: NextRequest) {
   const codeVerifier = generateCodeVerifier()
   const state = generateState()
-  const redirectUri = new URL('/admin/oauth/callback', request.nextUrl.origin).toString()
+  const redirectUri = oauthRedirectUri(request)
 
   const cookieStore = await cookies()
   const oauthCookieOptions = {

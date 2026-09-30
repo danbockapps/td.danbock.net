@@ -2,6 +2,7 @@ import {db} from '@/db'
 import {tournamentUsers, users} from '@/db/schema'
 import {exchangeCodeForToken, fetchLichessAccount, fetchLichessEmail} from '@/lib/auth/lichess'
 import {EMAIL_HINT_COOKIE, STATE_COOKIE, VERIFIER_COOKIE} from '@/lib/auth/oauth-cookies'
+import {oauthRedirectUri} from '@/lib/auth/redirect-uri'
 import {COOKIE_NAME, createSessionToken} from '@/lib/auth/session'
 import {eq} from 'drizzle-orm'
 import {cookies} from 'next/headers'
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     redirect('/admin/login?error=oauth')
   }
 
-  const redirectUri = new URL('/admin/oauth/callback', request.nextUrl.origin).toString()
+  const redirectUri = oauthRedirectUri(request)
 
   const accessToken = await exchangeCodeForToken({
     code,
