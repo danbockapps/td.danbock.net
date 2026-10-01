@@ -93,7 +93,7 @@ export function RegisterForm({
   if (step === 'done') {
     return (
       <div className="alert alert-success">
-        <span>You&apos;re registered for round {round}!</span>
+        <span>You&apos;re signed in for round {round}!</span>
       </div>
     )
   }
@@ -102,11 +102,11 @@ export function RegisterForm({
     return (
       <div className="card bg-base-200 p-6 shadow">
         <PlayerPreview preview={preview} />
-        <p className="mb-4 text-sm text-base-content/60">Register this player again?</p>
+        <p className="mb-4 text-sm text-base-content/60">Sign this player in for round {round}?</p>
         {error && <p className="mb-4 text-sm text-error">{error}</p>}
         <div className="flex gap-2">
           <button className="btn btn-primary" onClick={confirm} disabled={pending}>
-            {pending ? 'Submitting…' : 'Yes, register again'}
+            {pending ? 'Submitting…' : `Yes, sign in for round ${round}`}
           </button>
         </div>
         <button
@@ -115,7 +115,7 @@ export function RegisterForm({
           disabled={pending}
           type="button"
         >
-          Register someone else
+          Sign in someone else
         </button>
       </div>
     )
@@ -128,7 +128,7 @@ export function RegisterForm({
         {error && <p className="mb-4 text-sm text-error">{error}</p>}
         <div className="flex gap-2">
           <button className="btn btn-primary" onClick={confirm} disabled={pending}>
-            {pending ? 'Submitting…' : 'Confirm and register'}
+            {pending ? 'Submitting…' : 'Confirm and sign in'}
           </button>
           <button
             className="btn"
